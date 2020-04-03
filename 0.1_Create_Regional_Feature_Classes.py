@@ -2,7 +2,7 @@
 ###############################################################################################
 ###############################################################################################
 
-# Name:     0.0_Create_Regional_Feature_Classes.py
+# Name:     0.1_Create_Regional_Feature_Classes.py
 # Author:   USBR
 # Created:  20190922
 # Updated:  20200403 
@@ -21,7 +21,7 @@
 # This script will:
 
 # 0. Set-up
-# 1. Generate a new feature class subset to region of interest and with select fields cleared
+# 1. Generate a new feature class subset to region of interest and with select fields cleared for long-term accuracy assessment features
 # 2. Select long-term accuracy assessment features (CLASS == 4) and clear values of select attribute table fields
 # 3. Print percentage of fields in this region marked as being in a harvested growth stage during ground truth
 
@@ -39,7 +39,7 @@ arcpy.env.overwriteOutput = True
 
 # 0.2 Read in tool parameters
 
-# User selects file geodatabase for region, YYYY_T*_<REGION>.gdb) 
+# User selects file geodatabase for region (YYYY_T*_<REGION>.gdb) 
 project_geodatabase = arcpy.env.workspace = arcpy.GetParameterAsText(0)
 
 # User selects ground truth feature class
@@ -52,7 +52,7 @@ input_field = 'REGION'
 input_region = arcpy.GetParameterAsText(2)
 
 #-----------------------------------------------------------------------------------------------
-# 1. Generate a new feature class subset to region of interest and with select fields cleared
+# 1. Generate a new feature class subset to region of interest and with select fields cleared for long-term accuracy assessment features
 
 def generate_regional_data():
         
@@ -61,13 +61,13 @@ def generate_regional_data():
     print(region_and_time)
     arcpy.AddMessage('Project Geodatabase where output feature class will be saved to:' + str(project_geodatabase))
     
-    # Set new feature class name to basename of geodatabase, save for the extension
+    # Set new feature class name to basename 
     field_borders_feature_class_name = region_and_time 
     print(field_borders_feature_class_name)
     arcpy.AddMessage('Output feature class name:' + str(field_borders_feature_class_name))
     
     field_borders_feature_class = os.path.join(project_geodatabase, field_borders_feature_class_name)
-    field_borders_feature_class
+    print(field_borders_feature_class)
     
     # Clear selection of Ground Truth Feature Class so as to avoid a prior selection limiting the number of records copied
     arcpy.SelectLayerByAttribute_management(in_layer_or_view = ground_truth_feature_class, selection_type = 'CLEAR_SELECTION')
@@ -113,7 +113,7 @@ def generate_regional_data():
 
     # Create pandas data frame from growth stage frequency table 
     
-    # Create numpy array from Bad Signame Table Geodatabase Table, masking NULL values with -9999
+    # Create numpy array from growth stage frequency table, masking NULL values with -9999
     growth_stage_array = arcpy.da.TableToNumPyArray(in_table = growth_stage_table, field_names = '*', skip_nulls = False, null_value = -9999)
     print(growth_stage_array)
     
