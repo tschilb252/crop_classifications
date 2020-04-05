@@ -157,8 +157,9 @@ def generate_regional_data():
         print('Percentage of fields (by acreage) in this region marked as harvested growth stage during ground truth: ' + str(harvested_percentage_by_acres) + '%')
         arcpy.AddMessage('Percentage of fields (by acreage) in this region marked as harvested growth stage during ground truth: ' + str(harvested_percentage_by_acres) + '%')
 
+    # Suggest that user selects earlier imagery if harvest percentage is greater than 20%
     if 'harvested_percentage_by_units' and 'harvested_percentage_by_acres' in locals(): 
-        if harvested_percentage_by_units > 20 or harvested_percentage_by_acres > 20:
+        if harvested_percentage_by_units >= 20 or harvested_percentage_by_acres >= 20:
             print('Consider using a classification image with an acquisition date prior to ground truth verification.')
             arcpy.AddMessage('Consider using a classification image with an acquisition date prior to ground truth verification.')
 
