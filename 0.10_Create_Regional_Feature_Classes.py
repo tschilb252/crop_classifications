@@ -2,18 +2,21 @@
 ###############################################################################################
 ###############################################################################################
 
-# Name:     0.1_Create_Regional_Feature_Classes.py
-# Author:   USBR
-# Created:  20190922
-# Updated:  20200403 
-# Version:      Created using Python 3.6.8 
-# Requires:     ArcGIS Pro and Spatial Analyst Extension
-# Notes:        This script is intended to be used for a Script Tool within ArcGIS Pro; it is not intended as a stand-alone script.
-# Tool setup:   The script tool's properties can be set as follows: 
-                    # Parameters tab:    
-                        # Project_Geodatabase: Workspace (Data Type) > Required (Type) > Direction (Input) 
-                        # Ground_Truth_Feature_Class: Feature Layer (Data Type) > Required (Type) > Direction (Input) 
-                        # Region: String (Data Type) > Required (Type) > Direction (Input) 
+# Name:             0.10_Create_Regional_Feature_Classes.py
+# Author:           USBR
+# Created:          20190922
+# Updated:          20200413 
+# Version:          Created using Python 3.6.8 
+
+# Requires:         ArcGIS Pro and Spatial Analyst Extension
+
+# Notes:            This script is intended to be used for a Script Tool within ArcGIS Pro; it is not intended as a stand-alone script.
+
+# Tool setup:       The script tool's properties can be set as follows: 
+#                      Parameters tab:    
+#                           Project_Geodatabase: Workspace (Data Type) > Required (Type) > Direction (Input) 
+#                           Ground_Truth_Feature_Class: Feature Layer (Data Type) > Required (Type) > Direction (Input) 
+#                           Region: String (Data Type) > Required (Type) > Direction (Input) 
 
 ###############################################################################################
 ###############################################################################################
