@@ -19,11 +19,11 @@
 #                           AOI_Polygon: Feature Set (Data Type) > Required (Type) > Direction (Input) 
 #                           Output_Directory: Workspace (Data Type) > Required (Type) > Direction (Input) 
 #                           User_Name: String (Data Type) > Required (Type) > Direction (Input) 
-#                           User_Password: String (Data Type), Required (Type), Direction (Input)
-#                           Date_Range_Begin: String (Data Type), Required (Type), Direction (Input)
-#                           Date_Range_End: String (Data Type), Required (Type), Direction (Input)
-#                           Cloud_Range_Begin: String (Data Type), Required (Type), Direction (Input)
-#                           Cloud_Range_End: String (Data Type), Required (Type), Direction (Input)
+#                           User_Password: String (Data Type) > Required (Type) > Direction (Input)
+#                           Date_Range_Begin: String (Data Type) > Required (Type) > Direction (Input)
+#                           Date_Range_End: String (Data Type) > Required (Type) > Direction (Input)
+#                           Cloud_Range_Begin: String (Data Type) > Required (Type) > Direction (Input)
+#                           Cloud_Range_End: String (Data Type) > Required (Type) > Direction (Input)
 
 ###############################################################################################
 ###############################################################################################
