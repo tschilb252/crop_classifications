@@ -6,10 +6,13 @@
 # Created:          20200406
 # Updated:          20200413 
 # Version:          Created using Python 3.6.8 
+
 # Requires:         ArcGIS Pro license and sentinelsat Python package download
+
 # Notes:            This script is intended to be used for a Script Tool within ArcGIS Pro; it is not intended as a stand-alone script. 
-# Description:      This tool will allow a user to batch download and compile post-December 6th, 
-#                   2016 Sentinel-2 Level-1C products using three filters: 1) date range, 2) cloud cover range, and 3) tiles that  
+
+# Description:      This tool will allow a user to batch download and compile post-December 6th, 2016 
+#                   Sentinel-2 Level-1C products using three filters: 1) date range, 2) cloud cover range, and 3) tiles that  
 #                   completely contain a polygon drawn by the user in an ArcGIS Pro map.
  
 # Tool setup:       The script tool's properties can be set as follows (label does not matter, only the order): 
