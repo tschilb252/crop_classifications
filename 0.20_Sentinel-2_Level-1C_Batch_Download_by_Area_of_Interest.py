@@ -6,19 +6,24 @@
 # Created:          20200406
 # Updated:          20200413 
 # Version:          Created using Python 3.6.8 
+
 # Requires:         ArcGIS Pro license and sentinelsat Python package download
+
 # Notes:            This script is intended to be used for a Script Tool within ArcGIS Pro; it is not intended as a stand-alone script.
-# Description:      This tool will allow a user to batch download Sentinel-2 Level-1C products using three filters: 1) date range, 2) cloud cover range, and 3) tiles that completely contain a polygon drawn by the user in an ArcGIS Pro map. 
+
+# Description:      This tool will allow a user to batch download Sentinel-2 Level-1C products using three filters: 
+#                   1) date range, 2) cloud cover range, and 3) tiles that completely contain a polygon drawn by the user in an ArcGIS Pro map. 
+
 # Tool setup:       The script tool's properties can be set as follows (Label does not matter, only the order): 
-                        # Parameters tab:    
-                            # AOI_Polygon: Feature Set (Data Type) > Required (Type) > Direction (Input) 
-                            # Output_Directory: Workspace (Data Type) > Required (Type) > Direction (Input) 
-                            # User_Name: String (Data Type) > Required (Type) > Direction (Input) 
-                            # User_Password: String (Data Type), Required (Type), Direction (Input)
-                            # Date_Range_Begin: String (Data Type), Required (Type), Direction (Input)
-                            # Date_Range_End: String (Data Type), Required (Type), Direction (Input)
-                            # Cloud_Range_Begin: String (Data Type), Required (Type), Direction (Input)
-                            # Cloud_Range_End: String (Data Type), Required (Type), Direction (Input)
+#                       Parameters tab:    
+#                           AOI_Polygon: Feature Set (Data Type) > Required (Type) > Direction (Input) 
+#                           Output_Directory: Workspace (Data Type) > Required (Type) > Direction (Input) 
+#                           User_Name: String (Data Type) > Required (Type) > Direction (Input) 
+#                           User_Password: String (Data Type), Required (Type), Direction (Input)
+#                           Date_Range_Begin: String (Data Type), Required (Type), Direction (Input)
+#                           Date_Range_End: String (Data Type), Required (Type), Direction (Input)
+#                           Cloud_Range_Begin: String (Data Type), Required (Type), Direction (Input)
+#                           Cloud_Range_End: String (Data Type), Required (Type), Direction (Input)
 
 ###############################################################################################
 ###############################################################################################
@@ -78,7 +83,7 @@ default_geodatabase = aprx.defaultGeodatabase
 
 #----------------------------------------------------------------------------------------------
 
-# 1. Authenticate credentials to Copernicul Open Access Hub 
+# 1. Authenticate credentials to Copernicus Open Access Hub 
 api = sentinelsat.SentinelAPI(user = user_name, password = user_password)
 
 #----------------------------------------------------------------------------------------------
@@ -94,9 +99,9 @@ footprint = sentinelsat.geojson_to_wkt(sentinelsat.read_geojson(os.path.join(out
 # Search SciHub for Sentinel-2, Level 1C products for which the AOI is completely inside the footprint of the image
 products = api.query(area = footprint, area_relation = 'Contains', date = (date_range_begin, date_range_end), platformname = 'Sentinel-2', producttype = 'S2MSI1C', cloudcoverpercentage = (cloud_range_begin, cloud_range_end))
 
-# Print number of products returned from query 
+# Print initial number of products returned from query 
 print(len(products))
-arcpy.AddMessage('Number of products returned from query: ' + str(len(products)))
+arcpy.AddMessage('Initial number of products returned from query: ' + str(len(products)))
 
 #----------------------------------------------------------------------------------------------
 
@@ -117,8 +122,14 @@ print(products_df_sorted)
 products_df_unduplicated = products_df_sorted.drop_duplicates(['beginposition'], keep = 'first')
 print(products_df_unduplicated[['filename']])
 
+# Print culled number of products 
+print(len(products_df_unduplicated.index))
+arcpy.AddMessage('Final number of products to be downloaded: ' + str(len(products_df_unduplicated.index)))
+
 #----------------------------------------------------------------------------------------------
 
 # 4. Download culled products to output directory
 api.download_all(products = products_df_unduplicated.index, directory_path = output_directory)
 
+# Print message confirming downloads complete
+arcpy.AddMessage('Final products were either downloaded or previously existed in output directory') 
