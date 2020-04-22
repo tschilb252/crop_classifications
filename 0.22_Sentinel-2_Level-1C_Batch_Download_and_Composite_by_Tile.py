@@ -24,7 +24,7 @@
 #                           Date_Range_End: String (Data Type) > Required (Type) > Direction (Input)
 #                           Cloud_Range_Begin: String (Data Type) > Required (Type) > Direction (Input)
 #                           Cloud_Range_End: String (Data Type) > Required (Type) > Direction (Input)
-#                           Bands_Chosen: String-Multiple Values (Data Type) > Required (Type) > Direction (Input) > Value List of 01 through 12 (Filter)
+#                           Bands: String-Multiple Values (Data Type) > Required (Type) > Direction (Input) > Value List of 01 through 12 (Filter)
 
 ###############################################################################################
 ###############################################################################################
@@ -75,16 +75,16 @@ cloud_range_begin = arcpy.GetParameterAsText(6)
 # User specifies query cloud range ending percentage as an integer value between 0 and 100
 cloud_range_end = arcpy.GetParameterAsText(7)
 
-# User selects bands to be composited
-bands_chosen = arcpy.GetParameterAsText(8)
+# User selects bands to be composited 
+bands = arcpy.GetParameterAsText(8) # NOTE: multi-value string is returned as string with semi-colon delimiter (e.g. '02;03;04;08')
 
-# Create list out of user selected band numbers
-bands_list = bands_chosen.split(';')
+# Create list of strings out of user selected band numbers (e.g. ['02', '03', '04', '08'])
+bands_list = bands.split(';')
 
 # 0.2 Convert user-passed argument string of bands into organized string for naming convention
 
-# Convert bands_chosen string of numbers into list of integers
-bands_chosen_list = list(map(int,(bands_chosen.split(';'))))
+# Convert bands string of numbers into list of integers (e.g. [2, 3, 4, 8])
+bands_integer_list = list(map(int,(bands.split(';'))))
 
 # Function to convert list of numbers into a string that more elegantly expresses instances of consecutive sequences
 #   Adapted from: https://stackoverflow.com/questions/29418693/write-ranges-of-numbers-with-dashes
@@ -126,10 +126,10 @@ def organize_list_of_integers(band_numbers):
     return final_str
 
 # Call function and assign variable to resultant string (for use at end of script in naming convention of final composite rasters)
-band_nomenclature = organize_list_of_integers(bands_chosen_list)
+band_nomenclature = organize_list_of_integers(bands_integer_list)
 
 # Print list of bands to be composited by tool
-arcpy.AddMessage('This script will composite only Sentinel bands: ' + band_nomenclature)
+arcpy.AddMessage('This script will composite only Sentinel bands: ' + bands)
 
 # 0.3 Set environment settings
 
