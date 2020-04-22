@@ -128,8 +128,19 @@ products_df = api.to_dataframe(products)
 # Print initial query product filenames
 arcpy.AddMessage('Initial query product filenames: ' + str(list(products_df.filename)))
 
-# Drop any duplicate images so as to return only one per day per tile
-products_df_unduplicated = products_df.drop_duplicates(subset = ['beginposition','tileid'], keep = 'last')
+
+
+
+
+
+
+# Sort products based on beginposition (beginning of acquisition) and then by size
+products_df_sorted = products_df.sort_values(['beginposition', 'tileid', 'size'], ascending=[True, True, False])
+print(products_df_sorted)
+
+# Keep first entry (thereby selecting the smallest) in cases where there are multiple images per day (i.e. multiple tiles contain whole area of interest) 
+products_df_unduplicated = products_df_sorted.drop_duplicates(['beginposition', 'tileid'], keep = 'first')
+print(products_df_unduplicated[['filename']])
 
 # Print number of products culled 
 arcpy.AddMessage('Number of products culled: ' + str(len(products_df) - len(products_df_unduplicated.index)))
