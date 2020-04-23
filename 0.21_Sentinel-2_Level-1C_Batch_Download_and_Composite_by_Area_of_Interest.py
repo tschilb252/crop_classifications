@@ -4,7 +4,7 @@
 # Name:             0.21_Sentinel-2_Level-1C_Batch_Download_by_Area_of_Interest.py
 # Author:           Kelly Meehan, USBR
 # Created:          20200406
-# Updated:          20200413 
+# Updated:          20200422 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro license and sentinelsat Python package download
