@@ -1,10 +1,10 @@
 ###############################################################################################
 ###############################################################################################
 
-# Name:             0.23_Sentinel-2_Level-1C_Batch_Download_Unzip_and_Composite_by_Tile.py
+# Name:             0.22_Sentinel-2_Level-1C_Batch_Download_by_Tile.py
 # Author:           Kelly Meehan, USBR
 # Created:          20200415
-# Updated:          20200423 
+# Updated:          20200423
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro license and sentinelsat Python package
@@ -44,7 +44,7 @@
 # 0. Set-up
 
 # 0.0 Import necessary packages
-import os, arcpy, sentinelsat, zipfile, glob, fnmatch, collections
+import os, arcpy, sentinelsat, collections
 
 # 0.1 Assign variables to tool parameters
 
@@ -197,73 +197,3 @@ api.download_all(products = products_df_unduplicated.index, directory_path = out
 
 # Print message confirming downloads complete
 arcpy.AddMessage('Final products were either downloaded or previously existed in output directory and are ready to be composited') 
-
-#----------------------------------------------------------------------------------------------
-
-# 5. Unzip Sentinel-2 product 1C zipped downloaded files
-
-# Assign a variable to a list of all zip files within path directory 
-file_list = os.listdir()
-
-# Assign variable to empty list (to which .zip files to be iterated through will be added)
-zip_list = []
-
-# Loop though each file in working directory and add any files that: 1) are zip files, and 2) have not already been unzipped
-for h in file_list:
-    pre_existing_unzipped = h[:-4] + '.SAFE'
-    if fnmatch.fnmatch(h, '*.zip'): 
-        if os.path.isdir(pre_existing_unzipped):
-            print('unzipped file' + h + ' already exsits')
-        else:
-            zip_list.append(h)
-  
-# Unzip each SAFE file
-
-# For each zip file in the list
-for i in zip_list:
-    # Identify the unique path
-    zip_path = os.path.abspath(i)
-    # Unzip to folder with same name as zip file within path directory
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref: # https://stackoverflow.com/questions/3451111/unzipping-files-in-python
-        zip_ref.extractall(output_directory)
-
-#----------------------------------------------------------------------------------------------
-        
-# 6. Composite user selected bands
-
-# Get tuple of subdirectories in path
-unzipped_directories_list = glob.glob('*.SAFE')
-
-for j in unzipped_directories_list:
-    unzipped_directory_path = os.path.abspath(j)
-    
-    granule_folder_path = os.path.join(unzipped_directory_path, 'GRANULE')
-    
-    level_1C_folder_list = os.listdir(granule_folder_path)
-    
-    for k in level_1C_folder_list:
-        level_1C_folder_path = os.path.join(granule_folder_path, k)
-        img_folder_path = os.path.join(level_1C_folder_path, 'IMG_DATA')
-        raster_list = os.listdir(img_folder_path)
-        
-        all_bands_of_interest_path_list = []
-        
-        for r in raster_list:
-            raster_path = os.path.join(img_folder_path, r)
-            
-            for b in bands_list:
-                match_string = '*' + str(b) + '.jp2'
-                if fnmatch.fnmatch(r, match_string):
-                    all_bands_of_interest_path_list.append(raster_path)
-        
-        # Assign variables to composited rasters using the following nomenclature:      
-        #   MMM_MSIXXX_YYYYMMDD_Txxxxx_Bx_.img 
-        #   (i.e. MissionID_ProductLevel_SensingDate_TileNumber_BandsComposited.img)
-         
-        composite_raster_name = j.split('_')[0] + '_' + j.split('_')[1] + '_' + j.split('_')[2][:8] + '_' + j.split('_')[5] + '_B' + band_nomenclature + '.img' 
-
-        composite_raster = os.path.join(output_directory, composite_raster_name)
-     
-        arcpy.CompositeBands_management(in_rasters = all_bands_of_interest_path_list, out_raster = composite_raster)
-        arcpy.AddMessage('Finished compositing ' + composite_raster_name)
-        
