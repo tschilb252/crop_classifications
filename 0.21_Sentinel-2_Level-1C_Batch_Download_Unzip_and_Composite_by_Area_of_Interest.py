@@ -1,7 +1,7 @@
 ###############################################################################################
 ###############################################################################################
 
-# Name:             0.21_Sentinel-2_Level-1C_Batch_Download_by_Area_of_Interest.py
+# Name:             0.21_Sentinel-2_Level-1C_Batch_Download_Unzip_and_Composite_by_Area_of_Interest.py 
 # Author:           Kelly Meehan, USBR
 # Created:          20200406
 # Updated:          20200422 
