@@ -75,62 +75,6 @@ cloud_range_begin = arcpy.GetParameterAsText(6)
 # User specifies query cloud range ending percentage as an integer value between 0 and 100
 cloud_range_end = arcpy.GetParameterAsText(7)
 
-# User selects bands to be composited 
-bands = arcpy.GetParameterAsText(8) # NOTE: multi-value string is returned as string with semi-colon delimiter (e.g. '02;03;04;08')
-
-# Create list of strings out of user selected band numbers (e.g. ['02', '03', '04', '08'])
-bands_list = bands.split(';')
-
-# 0.2 Convert user-passed argument string of bands into organized string for naming convention
-
-# Convert bands string of numbers into list of integers (e.g. [2, 3, 4, 8])
-bands_integer_list = list(map(int,(bands.split(';'))))
-
-# Function to convert list of numbers into a string that more elegantly expresses instances of consecutive sequences
-#   Adapted from: https://stackoverflow.com/questions/29418693/write-ranges-of-numbers-with-dashes
-
-def organize_list_of_integers(band_numbers):
-    seq = []
-    final = []
-    last = 0
-
-    for index, val in enumerate(band_numbers):
-        # Check to see if current value is either the first in list or a consecutive number from the previous
-       
-        # If element is either first element or consecutive number, add value to sequence list
-        if last + 1 == val or index == 0:
-            seq.append(val)
-            last = val
-        # If element is not consecutive number
-        else:
-            # Either add string of first-last in the case of a sequence
-            if len(seq) > 1:
-               final.append(str(seq[0]) + '-' + str(seq[len(seq)-1]))
-            # Or just add previous single value to final
-            else:
-               final.append(str(seq[0]))
-            seq = []
-            seq.append(val)
-            last = val
-        
-        # Check to see if loop is on last number in list (seq gets converted during the next index's turn, which doesn't exist for last index)
-        if index == len(band_numbers) - 1:
-            # Either add string of first-last in the case of a sequence
-            if len(seq) > 1:
-                final.append(str(seq[0]) + '-' + str(seq[-1]))
-            # Or just add single value to final
-            else:
-                final.append(str(seq[0]))
-    # Concatenate list of string elements in final list into one string using '_' in between elements
-    final_str = '_'.join(final)
-    return final_str
-
-# Call function and assign variable to resultant string (for use at end of script in naming convention of final composite rasters)
-band_nomenclature = organize_list_of_integers(bands_integer_list)
-
-# Print list of bands to be composited by tool
-arcpy.AddMessage('This script will composite only Sentinel bands: ' + bands)
-
 # 0.3 Set environment settings
 
 # Set workspace to output directory
