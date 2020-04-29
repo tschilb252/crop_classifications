@@ -5,7 +5,7 @@
 # Name:             0.10_Create_Regional_Feature_Classes.py
 # Author:           USBR
 # Created:          20190922
-# Updated:          20200413 
+# Updated:          20200429 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro and Spatial Analyst Extension
@@ -102,7 +102,7 @@ def generate_regional_data():
 # 2. Generate a frequency table and print out percentage of fields harvested
 
     # Assign variable to frequency table name 
-    growth_stage_table_name = region_and_time + '_growth_stage_frequency'
+    growth_stage_table_name = region_and_time + '_Growth_Stage_Frequency'
     print(growth_stage_table_name)
     growth_stage_table = os.path.join(project_geodatabase, growth_stage_table_name)
     print(growth_stage_table)
