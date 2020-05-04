@@ -3,7 +3,7 @@
 ###############################################################################################
 
 # Name:             0.10_Create_Regional_Feature_Classes.py
-# Author:           USBR
+# Author:           Kelly Meehan, USBR
 # Created:          20190922
 # Updated:          20200429 
 # Version:          Created using Python 3.6.8 
@@ -54,6 +54,7 @@ input_region = arcpy.GetParameterAsText(2)
 arcpy.env.overwriteOutput = True
 
 #-----------------------------------------------------------------------------------------------
+
 # 1. Generate a new feature class subset to region of interest and with select fields cleared for long-term accuracy assessment features
 
 def generate_regional_data():
