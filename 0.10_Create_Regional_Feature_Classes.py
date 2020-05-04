@@ -35,12 +35,8 @@
 
 # 0.0 Install necessary packages
 import arcpy, os, pandas
-#from arcpy.sa import *
 
-# 0.1 Set environment settings
-arcpy.env.overwriteOutput = True
-
-# 0.2 Read in tool parameters
+# 0.1 Read in tool parameters
 
 # User selects file geodatabase for region (YYYY_T*_<REGION>.gdb) 
 project_geodatabase = arcpy.env.workspace = arcpy.GetParameterAsText(0)
@@ -53,6 +49,9 @@ input_field = 'REGION'
 
 # User types region name 
 input_region = arcpy.GetParameterAsText(2)
+
+# 0.2 Set environment settings
+arcpy.env.overwriteOutput = True
 
 #-----------------------------------------------------------------------------------------------
 # 1. Generate a new feature class subset to region of interest and with select fields cleared for long-term accuracy assessment features
