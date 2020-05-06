@@ -4,14 +4,14 @@
 # Name:             0.22_Sentinel-2_Level-1C_Batch_Download_by_Tile.py
 # Author:           Kelly Meehan, USBR
 # Created:          20200415
-# Updated:          20200423
+# Updated:          20200506
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro license and sentinelsat Python package
 
 # Notes:            This script is intended to be used for a Script Tool within ArcGIS Pro; it is not intended as a stand-alone script 
 
-# Description:      This tool will allow a user to batch download and compile (post-December 6th, 2016) 
+# Description:      This tool will allow a user to batch download and compile (post-2017-03-31) 
 #                   Sentinel-2 Level-1C products using three filters: 1) date range, 2) cloud cover range, and 3) tile id
  
 # Tool setup:       The script tool's properties can be set as follows (label does not matter, only the order): 
@@ -24,7 +24,6 @@
 #                           Date_Range_End: String (Data Type) > Required (Type) > Direction (Input)
 #                           Cloud_Range_Begin: String (Data Type) > Required (Type) > Direction (Input)
 #                           Cloud_Range_End: String (Data Type) > Required (Type) > Direction (Input)
-#                           Bands: String-Multiple Values (Data Type) > Required (Type) > Direction (Input) > Value List of 01 through 12 (Filter)
 
 ###############################################################################################
 ###############################################################################################
@@ -36,8 +35,6 @@
 # 2. Run query and store resultant list of products as an ordered dictionary
 # 3. Cull query results by keeping only one file per date with the smallest size
 # 4. Download products
-# 5. Unzip Sentinel-2 product Level-1C zipped downloaded files 
-# 6. Composite user selected bands
 
 #----------------------------------------------------------------------------------------------
 
