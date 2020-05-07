@@ -4,7 +4,7 @@
 # Name:             0.21_Sentinel-2_Level-1C_Batch_Download_Unzip_and_Composite_by_Area_of_Interest.py 
 # Author:           Kelly Meehan, USBR
 # Created:          20200406
-# Updated:          20200505 
+# Updated:          20200507 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro license and sentinelsat Python package download
@@ -12,8 +12,7 @@
 # Notes:            This script is intended to be used for a Script Tool within ArcGIS Pro; it is not intended as a stand-alone script 
 
 # Description:      This tool will allow a user to batch download, unzip, and compile post-December 6th, 2016 
-#                   Sentinel-2 Level-1C products using three filters: 1) date range, 2) cloud cover range, and 3) tiles that  
-#                   completely contain a polygon drawn by the user in an ArcGIS Pro map
+#                   Sentinel-2 Level-1C products using three filters: 1) date range, 2) cloud cover range, and 3) 3) tiles that completely contain a polygon drawn by the user in an ArcGIS Pro map 
  
 # Tool setup:       The script tool's properties can be set as follows (label does not matter, only the order): 
 #                       Parameters tab:    
@@ -36,8 +35,9 @@
 # 1. Authenticate credentials to Copernicus Open Access Hub 
 # 2. Run query and store resultant list of products as an ordered dictionary
 # 3. Cull query results by keeping only one file per date with the smallest size
-# 4. Download culled products to output directory
-# 5. Iterate through Sentinel-2 product Level-1C product zip files, unzip files to retreive .SAFE if necessary, and composite user-selected bands
+# 4. Generate csv of downloaded product metadata
+# 5. Download culled products to output directory
+# 6. Iterate through Sentinel-2 product Level-1C product zip files, unzip files to retreive .SAFE if necessary, and composite user-selected bands
 
 #----------------------------------------------------------------------------------------------
 
@@ -143,7 +143,7 @@ arcpy.env.overwriteOuptut = True
 aprx = arcpy.mp.ArcGISProject('CURRENT')
 default_geodatabase = aprx.defaultGeodatabase
 
-#----------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------
 
 # 1. Authenticate credentials to Copernicus Open Access Hub 
 api = sentinelsat.SentinelAPI(user = user_name, password = user_password)
@@ -188,9 +188,19 @@ arcpy.AddMessage('Final number of products to be downloaded: ' + str(len(product
 
 # Print final product filenames
 arcpy.AddMessage('Filenames of final products to be downloaded: ' + str(list(products_df_unduplicated.filename)))
+
 #----------------------------------------------------------------------------------------------
 
-# 4. Download culled products to output directory
+# 4. Generate csv of downloaded product metadata
+
+# Write Pandas DataFrame to csv in output directory
+products_df_unduplicated.to_csv('Sentinel-2_Level-1C_Query_by_AOI_' + date_range_begin + '-' + date_range_end + '_Clouds_' + cloud_range_begin + '-' + cloud_range_end + '_Metadata.csv')
+
+arcpy.AddMessage('Generated csv with metadata from products returned by query')
+
+#----------------------------------------------------------------------------------------------
+
+# 5. Download culled products to output directory
 
 api.download_all(products = products_df_unduplicated.index, directory_path = output_directory)
 
@@ -199,7 +209,7 @@ arcpy.AddMessage('Final products were either downloaded or previously existed in
 
 #----------------------------------------------------------------------------------------------
 
-# 5. Iterate through Sentinel-2 product Level-1C product zip files, unzip files to retreive .SAFE if necessary, and composite user-selected bands
+# 6. Iterate through Sentinel-2 product Level-1C product zip files, unzip files to retreive .SAFE if necessary, and composite user-selected bands
 
 # Create list of Sentinel-2 Level-1C zip files present in output directory 
 zip_list = glob.glob('S2?_MSIL1C*.zip')
