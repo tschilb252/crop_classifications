@@ -4,7 +4,7 @@
 # Name:             0.22_Sentinel-2_Level-1C_Batch_Download_by_Tile.py
 # Author:           Kelly Meehan, USBR
 # Created:          20200415
-# Updated:          20200506
+# Updated:          20200507
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro license and sentinelsat Python package
@@ -13,6 +13,7 @@
 
 # Description:      This tool will allow a user to batch download and compile (post-2017-03-31) 
 #                   Sentinel-2 Level-1C products using three filters: 1) date range, 2) cloud cover range, and 3) tile id
+#                   Download Sentinel-2 Tiles KML at https://sentinel.esa.int/web/sentinel/missions/sentinel-2/data-products
  
 # Tool setup:       The script tool's properties can be set as follows (label does not matter, only the order): 
 #                       Parameters tab:    
@@ -34,7 +35,8 @@
 # 1. Authenticate credentials to Copernicus Open Access Hub 
 # 2. Run query and store resultant list of products as an ordered dictionary
 # 3. Cull query results by keeping only one file per date with the smallest size
-# 4. Download products
+# 4. Generate csv of downloaded product metadata
+# 5. Download products
 
 #----------------------------------------------------------------------------------------------
 
@@ -95,9 +97,9 @@ api = sentinelsat.SentinelAPI(user = user_name, password = user_password)
 # Create empty ordered dictionary
 products = collections.OrderedDict()
 
-# For each tile, run query and a
+# For each tile, run query and update products OrderedDict with results
 for i in tiles_list:
-    arcpy.AddMessage('Searching for ' + str(i) + ' tiles matching query')
+    arcpy.AddMessage('Searching for Sentinel-2 Level-1C products matching query')
     pp = api.query(tileid = i, date = (date_range_begin, date_range_end), platformname = 'Sentinel-2', producttype = 'S2MSI1C', cloudcoverpercentage = (cloud_range_begin, cloud_range_end))
     products.update(pp)
     
@@ -131,7 +133,20 @@ arcpy.AddMessage('Filenames of final products to be downloaded: ' + str(list(pro
 
 #----------------------------------------------------------------------------------------------
 
-# 4. Download products
+# 4. Generate csv of downloaded product metadata
+
+# Create list comprehension of by adding 'T' to the beginning of each tile number in tiles_list 
+tile_names_list = ['T' + tile for tile in tiles_list]
+
+# Concatenate string elements in tiles_list to single string
+tiles_string = '_'.join(tile_names_list)
+
+# Write Pandas DataFrame to csv in output directory
+products_df_unduplicated.to_csv('Sentinel-2_Level-1C_Query_' + tiles_string + '_' + date_range_begin + '-' + date_range_end + '_Clouds_' + cloud_range_begin + '-' + cloud_range_end + '_Metadata.csv')
+
+#----------------------------------------------------------------------------------------------
+
+# 5. Download products
 
 # Download all final products to output directory
 api.download_all(products = products_df_unduplicated.index, directory_path = output_directory)
