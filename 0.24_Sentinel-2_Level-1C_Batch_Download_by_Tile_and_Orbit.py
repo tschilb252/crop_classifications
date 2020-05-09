@@ -4,14 +4,14 @@
 # Name:             0.24_Sentinel-2_Level-1C_Batch_Download_by_Tile_and_Orbit.py
 # Author:           Kelly Meehan, USBR
 # Created:          20200505
-# Updated:          20200506
+# Updated:          20200508
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro license and sentinelsat Python package
 
 # Notes:            This script is intended to be used for a Script Tool within ArcGIS Pro; it is not intended as a stand-alone script 
 
-# Description:      This tool will allow a user to batch download (post-March 3rd, 2017) 
+# Description:      This tool will allow a user to batch download (post-20170331) 
 #                   Sentinel-2 Level-1C products using four filters: 1) date range, 2) cloud cover range, 3) relative orbit number and 4) tile id
 #                   Download Sentinel-2 Relative Orbits KML file at https://sentinel.esa.int/web/sentinel/missions/sentinel-2/satellite-description/orbit
 #                   Download Sentinel-2 Tiles KML at https://sentinel.esa.int/web/sentinel/missions/sentinel-2/data-products
@@ -27,7 +27,6 @@
 #                           Date_Range_End: String (Data Type) > Required (Type) > Direction (Input)
 #                           Cloud_Range_Begin: String (Data Type) > Required (Type) > Direction (Input)
 #                           Cloud_Range_End: String (Data Type) > Required (Type) > Direction (Input)
-
 
 ###############################################################################################
 ###############################################################################################
@@ -47,18 +46,29 @@
 # 0.0 Import necessary packages
 import os, arcpy, sentinelsat
 
-# 0.1 Assign variables to tool parameters
+# 0.1 Assign variables to tool parameters and run checks on values passed
 
 # User specifies tileid to filter query results
-orbit = '127'
 orbit = arcpy.GetParameterAsText(0)
 
+# Raise error if user passes something other than a three character string of numbers for orbit parameter     
+try:
+    if len(orbit) != 3 or not orbit.isdigit():
+        raise Exception
+except Exception:
+    print('Orbit value passed must be a three digit integer. Please do not use R as a prefix.')    
+  
 # User specifies tileid to filter query results
-tile = '11SQS'
 tile = arcpy.GetParameterAsText(1)
 
+# Raise error if user passes something other than a five character string consisting of two numbers followed by three letters for tile parameter     
+try:
+    if len(tile) != 5 or not tile[:2].isdigit() or not tile[2:].isalpha():
+        raise Exception
+except Exception:
+    print('Tile value should be two numbers followed by three letters. Please do not use T as a prefix.')   
+    
 # User specifies folder where Sentinel imagery should be saved to 
-output_directory = r'C:\Users\kmeehan\Documents\COVID-19_Telework\T2_2020_Fallow_Analysis\Data\To_Composite'
 output_directory = arcpy.GetParameterAsText(2)
 
 # User adds existing username for Copernicus Open Access Hub
@@ -68,22 +78,60 @@ user_name = arcpy.GetParameterAsText(3)
 user_password = arcpy.GetParameterAsText(4)
 
 # User specifies query date range beginningin the form of YYYYMMDD
-date_range_begin = '20200419'
 date_range_begin = arcpy.GetParameterAsText(5)
 
+# Raise error if user passes something other than an eight character string of numbers for date_range_begin     
+try:
+    if len(date_range_begin) != 8 or not date_range_begin.isdigit():
+        raise Exception
+except Exception:
+    print('Date_Range_Begin should be eight digit integer in the form of YYYYMMDD.')   
+    
 # User specifies query date range ending in the form of YYYYMMDD
-date_range_end= 'NOW'
 date_range_end = arcpy.GetParameterAsText(6)
 
+# Raise error if user passes something other than an eight character string of numbers for date_range_end     
+try:
+    if date_range_end != 'NOW' or (len(date_range_end) != 8 and date_range_end.isdigit()):
+        raise Exception
+except Exception:
+    print('Date_Range_End should either be NOW or an eight digit integer in the form of YYYYMMDD.')   
+
+# Raise error if user passes selects a begin date after an end date     
+try:
+    if int(date_range_begin) > int(date_range_end):
+        raise Exception
+except Exception:
+    print('Date_Range_Begin must be before Date_Range_End.')   
+
+# Raise error if user tries to search for tiles befor 20170331     
+try:
+    if int(date_range_begin) < 20170401:
+        raise Exception
+except Exception:
+    print('Date search must be post-20200331.') 
+
 # User specifies query cloud range beginning percentage as an integer value between 0 and 100
-cloud_range_begin = '0'
 cloud_range_begin = arcpy.GetParameterAsText(7)
 
+# Raise error if user passes something other than an integer value between 0 and 100 for cloud_range_begin     
+try:
+    if int(cloud_range_begin) < 0 or not cloud_range_begin.isdigit():
+        raise Exception
+except Exception:
+    print('Cloud_Range_Begin should be a one or two digit integer.')   
+
 # User specifies query cloud range ending percentage as an integer value between 0 and 100
-cloud_range_end = '100'
 cloud_range_end = arcpy.GetParameterAsText(8)
 
-# 0.3 Set environment settings
+# Raise error if user passes something other than a eight character string of numbers for date_range_end     
+try:
+    if len(cloud_range_end) != 2 or not cloud_range_end.isdigit():
+        raise Exception
+except Exception:
+        print('Cloud_Range_End should be a one or two digit integer.')   
+
+# 0.2 Set environment settings
 
 # Set workspace to output directory
 arcpy.env.workspace = output_directory
@@ -91,7 +139,7 @@ arcpy.env.workspace = output_directory
 # Set overwrite permissions to true in case user reruns tool 
 arcpy.env.overwriteOuptut = True
 
-# 0.4 Change working directory to output directory
+# 0.3 Change working directory to output directory
 os.chdir(output_directory)
 
 #----------------------------------------------------------------------------------------------
