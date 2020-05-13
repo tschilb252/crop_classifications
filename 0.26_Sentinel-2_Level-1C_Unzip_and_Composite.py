@@ -1,10 +1,10 @@
 ###############################################################################################
 ###############################################################################################
 
-# Name:             0.24_Sentinel-2_Level-1C_Unzip_and_Copmosite.py
+# Name:             0.26_Sentinel-2_Level-1C_Unzip_and_Copmosite.py
 # Author:           Kelly Meehan, USBR
 # Created:          20200423
-# Updated:          20200505 
+# Updated:          20200510
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro license and sentinelsat Python package
@@ -41,14 +41,29 @@ output_directory = arcpy.GetParameterAsText(0)
 # User selects bands to be composited 
 bands = arcpy.GetParameterAsText(1) # NOTE: multi-value string is returned as string with semi-colon delimiter (e.g. '02;03;04;08')
 
+# 0.2 Set environment settings
+
+# Set workspace to output directory
+arcpy.env.workspace = output_directory
+
+# Set overwrite permissions to true in case user reruns tool 
+arcpy.env.overwriteOuptut = True
+
+# 0.3 Change working directory to output directory
+os.chdir(output_directory)
+
+#----------------------------------------------------------------------------------------------
+
+# 1. Iterate through Sentinel-2 product Level-1C product zip files, unzip files to retreive .SAFE if necessary, and composite user-selected bands
+
 # Create list of strings out of user selected band numbers (e.g. ['02', '03', '04', '08'])
 bands_list = bands.split(';')
 
 # 0.2 Convert user-passed argument string of bands into organized string for naming convention
 
 # Convert bands string of numbers into list of integers (e.g. [2, 3, 4, 8])
-bands_integer_list = list(map(int,(bands.split(';'))))
-
+bands_integer_list = sorted(list(map(int,(bands.split(';')))))
+ 
 # Function to convert list of numbers into a string that more elegantly expresses instances of consecutive sequences
 #   Adapted from: https://stackoverflow.com/questions/29418693/write-ranges-of-numbers-with-dashes
 
@@ -94,20 +109,7 @@ band_nomenclature = organize_list_of_integers(bands_integer_list)
 # Print list of bands to be composited by tool
 arcpy.AddMessage('This script will composite only Sentinel bands: ' + bands)
 
-# 0.3 Set environment settings
-
-# Set workspace to output directory
-arcpy.env.workspace = output_directory
-
-# Set overwrite permissions to true in case user reruns tool 
-arcpy.env.overwriteOuptut = True
-
-# 0.4 Change working directory to output directory
-os.chdir(output_directory)
-
-#----------------------------------------------------------------------------------------------
-
-# 1. Iterate through Sentinel-2 product Level-1C product zip files, unzip files to retreive .SAFE if necessary, and composite user-selected bands
+#--------------------------------------------
 
 # Create list of Sentinel-2 Level-1C zip files present in output directory 
 zip_list = glob.glob('S2?_MSIL1C*.zip')
@@ -122,6 +124,7 @@ for z in zip_list:
     composite_raster_name = z.split('_')[0][:-1] + '_' + z.split('_')[1] + '_' + z.split('_')[2][:8] + '_' + z.split('_')[4] + '_' + z.split('_')[5] + '_B' + band_nomenclature + '.img' 
     
     if os.path.isfile(composite_raster_name):
+        arcpy.AddMessage(composite_raster_name + ' already exists, continuing to next zip file')
         
         # If composite exists, continue to next zip file
         continue
@@ -129,12 +132,10 @@ for z in zip_list:
     # Otherwise, if composite raster associated with zip file and based on user-selected bands, then proceed 
     else:
         arcpy.AddMessage(composite_raster_name + ' does not already exist, proceeding')
-        
+
         # Check to see if associated SAFE directory already exists
-        safe_directory = z[:-4] + '.SAFE'  
-    
+        safe_directory = os.path.abspath(z[:-4] + '.SAFE')
         if os.path.isdir(safe_directory):
-            
             # If associated SAFE directory already exists, proceed
             arcpy.AddMessage(safe_directory + ' already exists')
             
@@ -143,11 +144,9 @@ for z in zip_list:
             
             # Identify the unique path of zip file
             zip_path = os.path.abspath(z)
-           
             # Unzip to folder with same name as zip file within path directory
             with zipfile.ZipFile(zip_path, 'r') as zip_ref: 
                 zip_ref.extractall(output_directory)
-            
             arcpy.AddMessage('created ' + safe_directory)
             
         # Composite rasters within IMG_DATA directory (within GRANULE directory of SAFE directory) that match user-selected bands
