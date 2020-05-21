@@ -13,7 +13,7 @@
 # Notes:            This script is intended to be used for a Script Tool within ArcGIS Pro; it is not intended as a stand-alone script.
 
 # Description:      This tool allows a user to use selected features within a Reshape Fields feature class to update the geometries of two sets of feature classes, each with differing unique IDs (i.e. earlier and later FIELD_IDs). 
-#                   User should have a Reshaped Fields feature class with the following attribute table fields complete: earlier_field_id, newer_field_id, and REGION
+#                   User should have a Reshaped Fields feature class with the following attribute table fields complete: earlier_field_id, later_field_id, and REGION
                     
 #----------------------------------------------------------------------------------------------
  
@@ -47,7 +47,7 @@ import arcpy
 # User selects reshaped fields feature class
 reshaped_fields = arcpy.GetParameterAsText(0)
 
-# User selects Earlier Feature Classes: (1: Ground Truth Feature Class and 2) corresponding and subsequent field border feature classes for which new field borders should be burned in for select features 
+# User selects Earlier Feature Classes: 1) Ground Truth Feature Class and 2) corresponding and subsequent field border feature classes for which new field borders should be burned in for select features 
 earlier_feature_classes = arcpy.GetParameterAsText(1)
 
 # User selects post-2017 field border feature classes for which new field borders should be burned in for select features  
@@ -56,7 +56,7 @@ later_feature_classes = arcpy.GetParameterAsText(2)
 # User selects region of classification 
 region =  arcpy.GetParameterAsText(3)
 
-# User provides comment string 
+# User provides uniform comment string to denote classification period initiating new border delineation
 gis_comment = arcpy.GetParameterAsText(4)
 
 #----------------------------------------------------------------------------------------------
@@ -98,9 +98,9 @@ def update_earlier_feature_classes():
                         cursor.updateRow(row)
                         arcpy.AddMessage('Updated shape in earlier feature class: ' + str(i) + ' for FIELD_ID: ' + str(earlier_id))
             
-            # Update ACRES in attribute table for earlier feature class
+            # Update ACRES in attribute table for Earlier Feature Class
             arcpy.CalculateField_management(in_table = i, field = 'ACRES', expression = '!shape.area@ACRES!', expression_type = 'PYTHON3')
-            arcpy.AddMessage('Updated ACRES in earlier feature class: ' + str(i))
+            arcpy.AddMessage('Updated ACRES in Earlier Feature Class: ' + str(i))
     else:
         arcpy.AddMessage('No Earlier Feature Classes inputted.')
         
@@ -108,33 +108,41 @@ def update_earlier_feature_classes():
 
 # 2. Iterate through features of later feature classes and overwrite geometry with that of a selected feature in Reshaped Fields of matching FIELD_ID values
 
-# 3. Create a dictionary from attribute table of reshapedFields feature class (key: value is later_field_id: @SHAPE) 
-
 def update_later_feature_classes():
     
     # Create list of strings out of semicolon delineated string
     later_feature_classes_list = later_feature_classes.split(';')
     
+    # Create a dictionary from attribute table of Reshaped Fields feature class (key: value is later_field_id: SHAPE@) 
+    
+    # Create empty dictionary
     later_id_dictionary = {}
+
+    # Create Update Cursor with fields: later_field_id and SHAPE@    
     with arcpy.da.UpdateCursor(reshaped_fields, ['later_field_id', 'SHAPE@']) as fCursor:
         for row in fCursor:
+            # Populate empty dictionary with key: value pairs from the two attribute table fields (later_field_id: SHAPE)
             later_id_dictionary [row[0]] = row[1]
-        
-    # Iterate through each feature and if FIELD_ID matches a key value (earlier_field_id), replace @SHAPE with that of the dictionary value, and update ACRES
+
+    # Iterate through each feature and if FIELD_ID matches a key value (later_field_id), replace @SHAPE with that of the dictionary value, and update ACRES
+            
+    # Check whether any Later Feature Classes were selected by user 
     if later_feature_classes:
-        arcpy.AddMessage('Updating ' + str(len(later_feature_classes_list)) + ' later feature classes...')
         for k in later_feature_classes_list:
+            # Clear selection of Later Feature Class
             arcpy.SelectLayerByAttribute_management(in_layer_or_view = k, selection_type = 'CLEAR_SELECTION')
+            # Create cursor with which to iterate through each feature
             with arcpy.da.UpdateCursor(k, ['FIELD_ID', 'SHAPE@']) as cursor:
                 for row in cursor:
                     later_id = row[0]
+                    # If FIELD_ID matches that of earlier_field_id and REGION matches, update Shape and GIS_COMMENTS attribute table fields
                     if later_id in later_id_dictionary and row[2] == region:
                         row[1] = later_id_dictionary[later_id]
                         row[3] = gis_comment
                         cursor.updateRow(row)
-                        arcpy.AddMessage('Updated shape in later: feature class: ' + str(k) + ' for FIELD_ID: ' + str(later_id))
+                        arcpy.AddMessage('Updated shape in Later Feature Class: ' + str(k) + ' for FIELD_ID: ' + str(later_id))
         
-            # Update ACRES in attribute table for post-2017 feature class
+            # Update ACRES in attribute table for Later Feature Class
             arcpy.CalculateField_management(in_table = k, field = 'ACRES', expression = '!shape.area@ACRES!', expression_type = 'PYTHON3')
             arcpy.AddMessage('Updated ACRES in Later Feature Class: ' + str(k))
     else:
