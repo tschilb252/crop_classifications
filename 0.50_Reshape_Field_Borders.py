@@ -5,7 +5,7 @@
 # Name:             0.50_Reshape_Field_Borders.py
 # Author:           Kelly Meehan, USBR
 # Created:          20181212
-# Updated:          20200520 
+# Updated:          20200521 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
@@ -19,11 +19,11 @@
  
 # Tool setup:       The script tool's properties can be set as follows: 
 #                      Parameters tab:    
-#                           Reshaped Fields:            Feature Layer (Data Type) > Required (Type) > Direction (Input) 
-#                           Earlier Feature Classes:    Feature Layer (Data Type) > Optional (Type) > Direction (Input) 
-#                           Later Feature Classes:      Feature Layer (Data Type) > Optional (Type) > Direction (Input) 
-#                           Region:                     String (Data Type) > Required (Type) > Direction (Input) 
-#                           GIS Comment:                String (Data Type) > Required (Type) > Directior (Input)
+#                           Reshaped Fields:            Feature Layer (Data Type) > Required (Type) > Input (Direction)
+#                           Earlier Feature Classes:    Feature Layer-Multiple Values (Data Type) > Optional (Type) > Input (Direction)
+#                           Later Feature Classes:      Feature Layer-Multiple Values (Data Type) > Optional (Type) > Input (Direction)
+#                           Region:                     String (Data Type) > Required (Type) > Input (Direction) 
+#                           GIS Comment:                String (Data Type) > Required (Type) > Input (Direction)
 
 ###############################################################################################
 ###############################################################################################
@@ -47,13 +47,13 @@ import arcpy
 # User selects reshaped fields feature class
 reshaped_fields = arcpy.GetParameterAsText(0)
 
-# User selects Earlier Feature Classes: 1) Ground Truth Feature Class and 2) corresponding and subsequent field border feature classes for which new field borders should be burned in for select features 
+# User selects one or more Earlier Feature Classes that share a consistent FIELD_ID labeling system
 earlier_feature_classes = arcpy.GetParameterAsText(1)
 
-# User selects post-2017 field border feature classes for which new field borders should be burned in for select features  
+# User selects one or more Later Feature Classes that share a consistent FIELD_ID labeling system
 later_feature_classes = arcpy.GetParameterAsText(2)
 
-# User selects region of classification 
+# User selects region that feature belongs to (so as to avoid overwritting feature with same ID in another region)
 region =  arcpy.GetParameterAsText(3)
 
 # User provides uniform comment string to denote classification period initiating new border delineation
