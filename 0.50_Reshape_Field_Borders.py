@@ -34,8 +34,7 @@
 # 1. Iterate through features of Earlier Feature Classes and overwrite geometry with that of a selected feature in Reshaped Fields of matching FIELD_ID and REGION values; update ACRES; replace GIS_COMMENTS value
 # 2. Iterate through features of Later Feature Classes and overwrite geometry with that of a selected feature in Reshaped Fields of matching FIELD_ID and REGION values; update ACRES; replace GIS_COMMENTS value
  
-###############################################################################################
-###############################################################################################
+#----------------------------------------------------------------------------------------------
 
 # 0. Set-up
 
