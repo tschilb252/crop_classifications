@@ -76,6 +76,7 @@ region =  arcpy.GetParameterAsText(8)
 
 #----------------------------------------------------------------------------------------------
 
+    
 # 1. Test for duplicate FIELD_ID
         
 def check_duplicate_id():
@@ -111,23 +112,23 @@ def update_feature():
         
             # Create a sorted list so that fields can always be referenced in the same order             
             field_names_list.sort() # Order should always be (case-insensitive): class, crop_type, field_id, gis_comments, region, study_area
-        
+            
             with arcpy.da.UpdateCursor(in_table = i, field_names = field_names_list) as cursor:
                 for row in cursor:
                     if row[2] == int(earlier_field_id) and row[4] == region: # NOTE: conditional test will not work without int(); region used here because there's duplicated field_ids among different regions
                         row[0] = class_value
                         row[1] = crop_type
                         row[5] = study_area
-                        if row[3] is not None or not str(row[1]).strip():
+                        if not row[3] or str(row[3]).strip() == '':
                             row[3] = gis_comment
                         else:
                             row[3] = str(row[3]) + '; ' + gis_comment
                         cursor.updateRow(row)
-            arcpy.AddMessage('Updated feature with FIELD_ID: ' + str(earlier_field_id) + ' within ' + str(i))                    
-
+            arcpy.AddMessage('Updated feature with FIELD_ID: ' + str(earlier_field_id) + ' within ' + str(i))     
+            
 #----------------------------------------------
 
-# Call functions; catch and handle a Runtime Error of Cannot acquire a lock if feature class is open
+# Call functions; catch and handle a Runtime Error of "Cannot acquire a lock" if feature class is open
             
 try:
     check_duplicate_id()
