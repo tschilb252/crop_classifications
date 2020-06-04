@@ -110,7 +110,7 @@
 
 # 0.0 Install necessary packages
 
-import arcpy, os, pandas, re
+import arcpy, os, pandas, re, sys
 from arcpy.sa import RemapValue, Reclassify, ZonalStatisticsAsTable, TabulateArea 
 
 # 0.1 Read in tool parametirs
@@ -208,7 +208,13 @@ reclassified_raster = os.path.join(img_path, reclassified_raster_name)
 remap_values = RemapValue([[0,'NODATA']])
 out_reclassify = Reclassify(in_raster = classified_tiff, reclass_field = 'Crop', remap = remap_values, missing_values = 'DATA') # NOTE: Passing argument 'DATA' to missing_values parameter allows you to leave all values other than 0 as they are.
 
-out_reclassify.save(reclassified_raster)
+# Test whether Reclassified Raster can be generated (i.e. if re-running tool it may not be able to delete pre-exising raster) and exit script if not  
+
+try:
+    out_reclassify.save(reclassified_raster)
+except RuntimeError:
+    arcpy.AddError('Cannot overwrite pre-existing ' + reclassified_raster + '; please re-run tool once more')
+    sys.exit(0)
 
 arcpy.AddMessage('Generated Reclassified Raster based on attribute table field, Crop')
 
