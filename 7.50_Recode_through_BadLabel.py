@@ -197,8 +197,6 @@ arcpy.AddMessage(''''Populated Classified Tiff's attribute table field, Crop, wi
 
 # 5. Reclassify Classified Tiff based on attribute table field, Crop
 
-# Set variables for Reclassified Raster filename and path
-
 iteration_number = re.split('[_.]', os.path.basename(classified_raster))[4]
 region_and_time = os.path.basename(edited_field_borders_shapefile).rsplit(sep = '_', maxsplit = 1)[0]
 region_and_time_caps = region_and_time.upper()
@@ -209,7 +207,6 @@ remap_values = RemapValue([[0,'NODATA']])
 out_reclassify = Reclassify(in_raster = classified_tiff, reclass_field = 'Crop', remap = remap_values, missing_values = 'DATA') # NOTE: Passing argument 'DATA' to missing_values parameter allows you to leave all values other than 0 as they are.
 
 # Test whether Reclassified Raster can be generated (i.e. if re-running tool it may not be able to delete pre-exising raster) and exit script if not  
-
 try:
     out_reclassify.save(reclassified_raster)
 except RuntimeError:
@@ -481,7 +478,7 @@ else:
     pandas_training_label_sig.to_excel(excel_writer = bad_sig_excel, sheet_name = iteration_name)
     arcpy.AddMessage('Generated Bad Signatures Excel Table: ' + str(bad_sig_excel))
 
+# 17. Delete output reclassified raster variable otherwise it will case a lock (ERROR 000871: Unable to delete the output) if the tool is re-run for the same iteration
 
-
-
+del out_reclassify
 
