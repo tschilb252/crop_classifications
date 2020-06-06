@@ -47,31 +47,35 @@
 #         """Modify the values and properties of parameters before internal
 #         validation is performed. This method is called whenever a parameter
 #         has been changed."""
-
-#         # Set a default value for Output Image Directory
+        
+#         # Set a default value for Edited Field Borders Shapefile
+#         if self.params[0].value:
+#             if not self.params[1].altered:
+#                 raster_name = os.path.basename(self.params[0].value.value)
+#                 region_time_caps = raster_name.rsplit(sep = '_', maxsplit = 2)[0].upper()
+#                 img_directory = os.path.dirname(self.params[0].value.value)
+#                 covs_directory = os.path.abspath(os.path.join(img_directory, '..', 'covs_' + region_time_caps))
+#                 edtd_shp = os.path.join(covs_directory, region_time_caps + '_edtd.shp')
+#                 self.params[1].value = edtd_shp
+            
+#         # Set a default value for Image Directory
 #         if self.params[1].value:
 #             if not self.params[2].altered:
-#                 covs_path = os.path.dirname(self.params[1].value.value)
-#                 covs_name = str(os.path.basename(self.params[1].value.value))
-#                 region_and_time = covs_name.rsplit(sep = '_', maxsplit = 1)
-#                 img_folder_name = 'img_' + region_and_time[0]
-#                 img_path = os.path.abspath(os.path.join(covs_path, '..', img_folder_name))
-#                 self.params[2].value = img_path        
+#                 self.params[2].value = img_directory        
 
-#         # Set a default value for Output Shapefile Directory
+#         # Set a default value for Shapefile Directory
 #             if not self.params[3].altered:
-#                 self.params[3].value = covs_path
+#                 self.params[3].value = covs_directory
 
-#         # Set a default value for Output Documents Directory
+#         # Set a default value for Documents Directory
 #             if not self.params[4].altered:
-#                 docs_folder_name = 'docs_' + region_and_time[0]
-#                 docs_path = os.path.abspath(os.path.join(covs_path, '..', docs_folder_name))
-#                 self.params[4].value = docs_path
+#                 docs_directory = os.path.abspath(os.path.join(covs_directory, '..', 'docs_' + region_time_caps))
+#                 self.params[4].value = docs_directory
 
-#         # Set a default value for Output Documents Directory
+#         # Set a default value for Project Geodatabase
 #             if not self.params[5].altered:
-#                 gdb_name = region_and_time[0] + '.gdb'
-#                 self.params[5].value = gdb_name  
+#                 gdb_directory = os.path.abspath(os.path.join(covs_directory, '..', region_time_caps + '.gdb'))
+#                 self.params[5].value = gdb_directory
                       
 #     def updateMessages(self):
 #         """Modify the messages created by internal validation for each tool
