@@ -208,6 +208,11 @@ reclassified_raster_name = region_and_time + '_reclassified_' + iteration_number
 reclassified_raster = os.path.join(img_path, reclassified_raster_name)
 
 remap_values = RemapValue([[0,'NODATA']])
+
+if 'out_reclassify' in locals():
+    arcpy.AddMessage('delecting out_reclassify')
+    del out_reclassify
+    
 out_reclassify = Reclassify(in_raster = classified_tiff, reclass_field = 'Crop', remap = remap_values, missing_values = 'DATA') # NOTE: Passing argument 'DATA' to missing_values parameter allows you to leave all values other than 0 as they are.
 
 # Test whether Reclassified Raster can be generated (i.e. if re-running tool it may not be able to delete pre-exising raster) and exit script if not  
@@ -218,6 +223,10 @@ except RuntimeError:
     sys.exit(0)
 
 arcpy.AddMessage('Generated Reclassified Raster based on attribute table field, Crop')
+
+# Delete output reclassified raster variable otherwise it will cause a lock (ERROR 000871: Unable to delete the output) if the tool is re-run for the same iteration
+
+del out_reclassify
 
 #----------------------------------------------------------------------------------------------
 
@@ -475,14 +484,18 @@ if os.path.isfile(bad_sig_excel):
     writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
     
     pandas_training_label_sig.to_excel(writer, iteration_name)
-    writer.save()
-    arcpy.AddMessage('Added new sheet in Bad Signatures Excel Workbook: ' + str(bad_sig_excel) + ' for iteration number: ' + str(iteration_number))
+    
+    try:
+        writer.save()
+    except PermissionError:
+        arcpy.AddError('Please close ' + bad_sig_excel + ' and re-run tool')
+        sys.exit(0)       
+    else:
+        arcpy.AddMessage('Added new sheet in Bad Signatures Excel Workbook: ' + str(bad_sig_excel) + ' for iteration number: ' + str(iteration_number))
 
 else:
     pandas_training_label_sig.to_excel(excel_writer = bad_sig_excel, sheet_name = iteration_name)
     arcpy.AddMessage('Generated Bad Signatures Excel Table: ' + str(bad_sig_excel))
 
-# 17. Delete output reclassified raster variable otherwise it will case a lock (ERROR 000871: Unable to delete the output) if the tool is re-run for the same iteration
 
-del out_reclassify
 
