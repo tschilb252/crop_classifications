@@ -114,7 +114,7 @@
 
 # 0.0 Install necessary packages
 
-import arcpy, os, pandas, re, sys
+import arcpy, os, pandas, re, sys, psutil, time
 from arcpy.sa import RemapValue, Reclassify, ZonalStatisticsAsTable, TabulateArea 
 
 # 0.1 Read in tool parametirs
@@ -225,7 +225,6 @@ except RuntimeError:
 arcpy.AddMessage('Generated Reclassified Raster based on attribute table field, Crop')
 
 # Delete output reclassified raster variable otherwise it will cause a lock (ERROR 000871: Unable to delete the output) if the tool is re-run for the same iteration
-
 del out_reclassify
 
 #----------------------------------------------------------------------------------------------
@@ -476,8 +475,31 @@ iteration_name = 'iteration_' + iteration_number
 # Import function, load_workbook, from openpyxl which allows you to add a sheet to an already existing Excel file
 from openpyxl import load_workbook 
 
-# Check to see if Bad Signames Excel Workbook already exists; if so, add just a sheet, otherwise, create the Excel file
-if os.path.isfile(bad_sig_excel):
+# Define function returning boolean value of whether or not a file has a handle on it (Source: https://stackoverflow.com/questions/11114492/check-if-a-file-is-not-open-nor-being-used-by-another-process)
+if os.path.isfile(bad_sig_excel): 
+
+    def has_handle(file_path):
+            for proc in psutil.process_iter():
+                try:
+                    for item in proc.open_files():
+                        if file_path == item.path:
+                            return True
+                except Exception:
+                    pass
+        
+            return False
+                
+# Test whether Bad Signame Excel Workbook has a handle on it (is open on the local computer) and pause the script to give the user a chance to close it so as to avoid PermissionError (below)
+    my_test = has_handle(bad_sig_excel)
+    if my_test == True:
+        while my_test == True:
+            arcpy.AddWarning('Please close ' + bad_sig_excel + ' in order to proceed')
+            time.sleep(5)
+            my_test = has_handle(bad_sig_excel)
+        arcpy.AddMessage(bad_sig_excel + ' is now closed; continuing...')
+
+# Once Bad Signame Excel Workbook has no handle on it, add a sheet for this iteration, or create the Excel file if one does not exist (in the case of first iteration)
+
     book = load_workbook(bad_sig_excel)
     writer = pandas.ExcelWriter(bad_sig_excel, engine ='openpyxl') 
     writer.book = book
