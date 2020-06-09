@@ -2,10 +2,10 @@
 ###############################################################################################
 ###############################################################################################
 
-# Name:             7.5_Recode.py
+# Name:             7.50_Recode_through_BadLabel.py
 # Author:           Kelly Meehan, USBR
 # Created:          20180618
-# Updated:          20200604 
+# Updated:          20200609 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
@@ -117,7 +117,9 @@
 import arcpy, os, pandas, re, sys, psutil, time
 from arcpy.sa import RemapValue, Reclassify, ZonalStatisticsAsTable, TabulateArea 
 
-# 0.1 Read in tool parametirs
+#--------------------------------------------
+
+# 0.1 Read in tool parameters
 
 # User selects Classified Raster (ERDAS IMAGINE .img file)
 classified_raster = arcpy.GetParameterAsText(0) 
