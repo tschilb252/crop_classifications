@@ -11,7 +11,7 @@
 
 # Notes:            This script is intended to be used for a Script Tool within ArcGIS Pro; it is not intended as a stand-alone script 
 
-# Description:      This tool will allow a user to batch download and compile (post-2017-03-31) 
+# Description:      This tool will allow a user to batch download and compile (post-2017-04-30) 
 #                   Sentinel-2 Level-1C products using three filters: 1) date range, 2) cloud cover range, and 3) tile id
 #                   Download Sentinel-2 Tiles KML at https://sentinel.esa.int/web/sentinel/missions/sentinel-2/data-products
  
@@ -91,7 +91,7 @@
 #             else:
 #                 self.params[5].setErrorMessage('{0} is not an appropriate value to pass to Date Range End parameter. Please provide either 1) eight integers in the following format: YYYYMMDD, or 2) NOW'.format(date_range_end_value))
         
-#         # Ensure that Date Range End parameter receives a value that does not precede March 31st, 2017     
+#         # Ensure that Date Range End parameter receives a value earlier than April 1st, 2017     
 #             if date_range_end_value == 'NOW':
 #                 date_end = datetime.datetime.today().strftime("%Y%m%d")
 #             else: 
@@ -99,6 +99,15 @@
                             
 #             if int(date_end) < 20170401:
 #                 self.params[5].setErrorMessage('{0} is not appropriate value to pass to Date Range End parameters. Please provide a date after March 31st, 2017'.format(date_range_end_value))
+          
+#           # Show warning if Date Range End parameter receives a value that earlier than May 1st, 2017     
+#             if date_range_end_value == 'NOW':
+#                 date_end = datetime.datetime.today().strftime("%Y%m%d")
+#             else: 
+#                 date_end = date_range_end_value
+                            
+#             if int(date_end) < 20170501:
+#                 self.params[5].setWarningMessage('Please be warned that due to missing metadata in SciHub’s DHuS catalogue, a search for products before (roughly) May 1st, 2017 may not yield all results. For searches near April of 2017, it is advised to compare the number of products with those returned from either the Copernicus Open Data Hub or Tool 0.21, which uses a footprint instead.')
                           
 #         # Ensure that Date Range End parameter receives a value that succeeds that of Date Range Begin
 #         if self.params[4].value and self.params[5].value:
