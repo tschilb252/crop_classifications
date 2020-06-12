@@ -4,7 +4,7 @@
 # Name:             0.23_Sentinel-2_Level-1C_Batch_Download_Unzip_and_Composite_by_Tile.py
 # Author:           Kelly Meehan, USBR
 # Created:          20200415
-# Updated:          20200507 
+# Updated:          20200612 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro license and sentinelsat Python package
@@ -28,7 +28,6 @@
 #                           Composite Bands?                Boolean (Data Type) > Optional (Type) > Direction (Input)
 #                           Bands                           String-Multiple Values (Data Type) > Optional (Type) > Direction (Input) > Value List of 01 through 12 (Filter)
 
-
 #                       Validation tab: 
 
 # import arcpy
@@ -50,7 +49,7 @@
 #         validation is performed. This method is called whenever a parameter
 #         has been changed."""
 
-#         # Make Bands parameter only appear if composite band box is checked
+#         # Make Bands parameter only appear if Composite Bands? box is checked
 #         if self.params[8].value:
 #             self.params[9].enabled = True
 #         else:
@@ -64,7 +63,59 @@
 #     def updateMessages(self):
 #         """Modify the messages created by internal validation for each tool
 #         parameter. This method is called after internal validation."""
+         
+#         # Ensure that each value passed to Tiles Chosen List parameter receives a character string consisting of a two digit integer followed by three letters
+#         if self.params[0].value:
+#             inVT = self.params[0].value # multivalue ValueTable
+#             rowCount = inVT.rowCount
+#             for row in range(0,rowCount):
+#                 value = inVT.getValue(row,0) 
+#                 if len(value) != 5 or not value[:2].isdigit() or not value[2:].isalpha():    
+#                     self.params[0].setErrorMessage('{0} is not an appropriate value to pass to Tile parameter. Please provide five characters (two integers followed by three letters)'.format(value))    
+                
+#         # Ensure that Date Range Begin parameter receives a character string consisting of eight integers
+#         if self.params[4].value:
+#             date_range_begin_value = self.params[4].value
+#             if len(date_range_begin_value) != 8 or not date_range_begin_value.isdigit():
+#                 self.params[4].setErrorMessage('{0} is not an appropriate value to pass to Date Range Begin parameter. Please provide eight integers in the following format: YYYYMMDD'.format(date_range_begin_value))
+        
+#         # Ensure that Date Range Begin parameters receive a date value that does not precede March 31st, 2017     
+#             if int(date_range_begin_value) < 20170401:
+#                 self.params[4].setErrorMessage('{0} is not an appropriate value to pass to Date Range Begin parameters. Please provide a date after March 31st, 2017'.format(date_range_begin_value))
+                
+#         # Ensure that Date Range End parameter receives a character string consisting of eight integers or the word NOW (in caps)
+#         if self.params[5].value:
+#             date_range_end_value = self.params[5].value
+#             if date_range_end_value == 'NOW' or (len(date_range_end_value) == 8 and date_range_end_value.isdigit()):
+#                 pass
+#             else:
+#                 self.params[5].setErrorMessage('{0} is not an appropriate value to pass to Date Range End parameter. Please provide either 1) eight integers in the following format: YYYYMMDD, or 2) NOW'.format(date_range_end_value))
+        
+#         # Ensure that Date Range End parameter receives a value that does not precede March 31st, 2017     
+#             if date_range_end_value == 'NOW':
+#                 date_end = datetime.datetime.today().strftime("%Y%m%d")
+#             else: 
+#                 date_end = date_range_end_value
+                            
+#             if int(date_end) < 20170401:
+#                 self.params[5].setErrorMessage('{0} is not appropriate value to pass to Date Range End parameters. Please provide a date after March 31st, 2017'.format(date_range_end_value))
+                          
+#         # Ensure that Date Range End parameter receives a value that succeeds that of Date Range Begin
+#         if self.params[4].value and self.params[5].value:
+#             if int(date_range_begin_value) > int(date_end):
+#                 self.params[5].setErrorMessage('{0} and {1} are not appropriate values to pass to Date Range Begin and Date Range End parameters. Please provide a date for Date Range End that is after Date Range Begin'.format(date_range_begin_value, date_range_end_value))
 
+#         # Ensure that Date Range End parameter recieves a value different from that of Date Range Begin
+#             if int(date_range_begin_value) == int(date_end):
+#                 self.params[5].setErrorMessage('{0} is not an appropriate value to pass to Date Range End parameter. Please provide a date for Date Range End that is at least one day after Date Range Begin'.format(date_range_end_value))
+   
+#         # Ensure that Cloud Range End parameter receives a value greater than that of Cloud Range Begin
+#         if self.params[6].value and self.params[7].value:
+#             cloud_range_begin_value = self.params[6].value
+#             cloud_range_end_value = self.params[7].value
+#             if int(cloud_range_begin_value) > int(cloud_range_end_value):
+#                 self.params[7].setErrorMessage('{0} and {1} are not appropriate values to pass to Cloud Range Begin and Cloud Range End parameters. Please provide an integer value for Cloud Range End that is greater than Cloud Range Begin'.format(cloud_range_begin_value, cloud_range_end_value))                    
+                    
 #     def isLicensed(self):
 #         """Set whether tool is licensed to execute."""
 #         return True
