@@ -24,8 +24,8 @@
 #                           Date_Range_End                  String (Data Type) > Required (Type) > Direction (Input)
 #                           Cloud_Range_Begin               String (Data Type) > Required (Type) > Direction (Input)
 #                           Cloud_Range_End                 String (Data Type) > Required (Type) > Direction (Input)
-#                           Composite Bands?                Boolean (Data Type) > Required (Type) > Direction (Input)                           
-#                           Bands                           String-Multiple Values (Data Type) > Required (Type) > Direction (Input) > Value List of 01 through 12 (Filter)
+#                           Composite Bands?                Boolean (Data Type) > Optional (Type) > Direction (Input)                           
+#                           Bands                           String-Multiple Values (Data Type) > Optional (Type) > Direction (Input) > Value List of 01 through 12 (Filter)
 
 ###############################################################################################
 ###############################################################################################
@@ -38,7 +38,7 @@
 # 3. Cull query results by keeping only one file per date with the smallest size
 # 4. Generate csv of downloaded product metadata
 # 5. Download culled products to output directory
-# 6. Iterate through Sentinel-2 product Level-1C product zip files, unzip files to retreive .SAFE if necessary, and composite user-selected bands
+# 6. Iterate through Sentinel-2 product Level-1C product zip files, unzip files to retreive .SAFE if necessary, and composite user-selected bands (if user selected to composite bands)
 
 #----------------------------------------------------------------------------------------------
 
