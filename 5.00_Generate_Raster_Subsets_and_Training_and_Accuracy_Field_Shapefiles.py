@@ -44,8 +44,8 @@ edited_field_borders_shapefile = arcpy.GetParameterAsText(0)
 aoi_shapefile = arcpy.GetParameterAsText(1)
 
 # User selects Raw Sentinel Image(s) in order of priority (dominant raster first)
-raw_raster_or_rasters = arcpy.GetParameterAsText(2)
-raw_raster_list = raw_raster_or_rasters.split(';') 
+raw_raster_list = arcpy.GetParameterAsText(2).split(';')
+#raw_raster_list = raw_raster_or_rasters.split(';') 
 
 # User selects Image Directory
 img_path = arcpy.GetParameterAsText(3)
