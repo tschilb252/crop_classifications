@@ -30,7 +30,7 @@
 # 0. Set up
  
 # 0.0 Import necessary packages 
-import arcpy, os
+import arcpy, os, sys
 from arcpy.sa import ExtractByMask
 
 #--------------------------------------------
@@ -40,18 +40,15 @@ from arcpy.sa import ExtractByMask
 # User selects Edited Field Borders Shapefile
 edited_field_borders_shapefile = arcpy.GetParameterAsText(0) 
 
-# User selects AOI Shapefile
-aoi_shapefile = arcpy.GetParameterAsText(1)
-
 # User selects Raw Sentinel Image(s) in order of priority (dominant raster first)
-raw_raster_list = arcpy.GetParameterAsText(2).split(';')
+raw_raster_list = arcpy.GetParameterAsText(1).split(';')
 #raw_raster_list = raw_raster_or_rasters.split(';') 
 
 # User selects Image Directory
-img_path = arcpy.GetParameterAsText(3)
+img_path = arcpy.GetParameterAsText(2)
 
 # User selects Coverage Directory
-covs_path = arcpy.GetParameterAsText(4)
+covs_path = arcpy.GetParameterAsText(3)
 
 #--------------------------------------------
 
@@ -108,13 +105,17 @@ copied_raster_name_list = []
     
 for i in raw_raster_list:
     
-    # Assign 0 pixels to NoData
+    # Assign pixels with value of 0 to NoData
     arcpy.SetRasterProperties_management(in_raster = i, data_type = '#', statistics = '#', stats_file = '#', nodata = '1 0; 2 0; 3 0; 4 0; 5 0; 6 0; 7 0; 8 0; 9 0; 10 0', key_properties = '#')
     
+    arcpy.AddMessage('Set pixels with value of 0 to NoData')
+    
     # Reproject raster
-    reprojected_raster_name = os.path.splitext(i)[0] + '_NAD83.img'
+    reprojected_raster_name = os.path.splitext(i)[0] + '_Reprojected.img'
     reprojected_raster = os.path.join(img_path, reprojected_raster_name)    
     arcpy.ProjectRaster_management(in_raster = i, out_raster = reprojected_raster, out_coor_system = edited_field_borders_shapefile)
+    
+    arcpy.AddMessage('Reprojected: ' + i)
 
     # Add copied raster to list as well as copied raster name to another list 
     copied_raster_list.append(reprojected_raster)
@@ -154,38 +155,57 @@ else:
 # Reset snap raster environment parameter
 arcpy.env.snapRaster = raster
 
-# Generate AOI Subset Raster 
+# Generate bounding box, a square polygon that containsall polygons of edited field borders shapefile
+bounding_box = os.path.join(covs_path, region_and_time + '_bounding_box.shp') 
+arcpy.MinimumBoundingGeometry_management(in_features = edited_field_borders_shapefile, out_feature_class = bounding_box, geometry_type = 'ENVELOPE', group_option = 'ALL')
 
-# Set path name and file name for AOI Subset Raster
-aoi_subset = os.path.join(img_path, region_and_time + '_AOI_subset.img')
+# Find extent of bounding box and raster 
 
-# Execute Extract by Mask tool to create AOI Subset Raster   
-arcpy.env.mask = aoi_shapefile
-out_aoi_raster = ExtractByMask(in_raster = raster, in_mask_data = aoi_shapefile)
-out_aoi_raster.save(aoi_subset)    
+describe_box = arcpy.Describe(bounding_box)
+extent_box = describe_box.extent
 
-arcpy.AddMessage('Generated AOI Subset Raster: ' + aoi_subset)
+describe_raster = arcpy.Describe(raster)
+extent_raster = describe_raster.extent
 
-# Generate Field Borders Subset Raster
+box_contains_raster = extent_raster.contains(extent_box)
 
-# Create name and path for Field Borders Subset Raster
-fields_subset = os.path.join(img_path, region_and_time + '_fields_subset.img')
+# Test whether bounding box extent is within raster; if so, subset raster 
+if box_contains_raster == True:
+    
+    # Set path name and file name for AOI Subset Raster
+    aoi_subset = os.path.join(img_path, region_and_time + '_AOI_subset.img')
+    
+    # Create AOI Subset Raster   
+    arcpy.env.mask = bounding_box
+    out_aoi_raster = ExtractByMask(in_raster = raster, in_mask_data = bounding_box)
+    out_aoi_raster.save(aoi_subset)    
+    
+    arcpy.AddMessage('Generated AOI Subset Raster: ' + aoi_subset)
 
-# Execute Extract by Mask tool to create Field Borders Subset Raster    
-arcpy.env.mask = edited_field_borders_shapefile
-out_borders_raster = ExtractByMask(in_raster = raster, in_mask_data = edited_field_borders_shapefile)
-out_borders_raster.save(fields_subset)   
+    # Generate Field Borders Subset Raster
+    
+    # Create name and path for Field Borders Subset Raster
+    fields_subset = os.path.join(img_path, region_and_time + '_fields_subset.img')
+    
+    # Create Field Borders Subset Raster    
+    arcpy.env.mask = edited_field_borders_shapefile
+    out_borders_raster = ExtractByMask(in_raster = raster, in_mask_data = edited_field_borders_shapefile)
+    out_borders_raster.save(fields_subset)   
+    
+    arcpy.AddMessage('Generated Field Borders Subset Raster: ' + fields_subset)
+    
+    # Generate Training Fields Subset Raster
+    
+    # Create name and path for Training Fields Subset Raster
+    training_subset = os.path.join(img_path, region_and_time + '_training_subset.img')
+    
+    # Create Training Fields Subset Raster
+    arcpy.env.mask = training_fields_mask
+    out_training_raster = ExtractByMask(in_raster = raster, in_mask_data = training_fields_mask)
+    out_training_raster.save(training_subset)  
+    
+    arcpy.AddMessage('Generated Training Subset Raster: ' + training_subset)
 
-arcpy.AddMessage('Generated Field Borders Subset Raster: ' + fields_subset)
-
-# Generate Training Fields Subset Raster
-
-# Create name and path for Training Fields Subset Raster
-training_subset = os.path.join(img_path, region_and_time + '_training_subset.img')
-
-# Execute Extract by Mask tool to create Training Fields Subset Raster
-arcpy.env.mask = training_fields_mask
-out_training_raster = ExtractByMask(in_raster = raster, in_mask_data = training_fields_mask)
-out_training_raster.save(training_subset)  
-
-arcpy.AddMessage('Generated Training Subset Raster: ' + training_subset)
+else: 
+    arcpy.AddError('Raster does not fully contain a minimum bounding box of edited field borders feature class. Please include additional raster in Raw Images parameter.')
+    sys.exit(0)    
