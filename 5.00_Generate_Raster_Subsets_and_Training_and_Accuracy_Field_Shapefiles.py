@@ -21,7 +21,7 @@
 # 0. Set up
 # 1. Create Accuracy Fields Shapefile and Training Fields Shapefile, subset from Edited Fields Shapefile
 # 2. Create Training Fields Mask Shapefile, 30 meter inner buffer mask of Training Fields Shapefile
-# 3. Assign pixels with value of 0 to NoData and reproject rasters 
+# 3. Reproject rasters 
 # 4. Mosaic rasters (if applicable)
 # 5. Create three subsets from Mosaiced Raw Raster Sentinel Image(s) or Raw Sentinel Image 
 
@@ -42,7 +42,6 @@ edited_field_borders_shapefile = arcpy.GetParameterAsText(0)
 
 # User selects Raw Sentinel Image(s) in order of priority (dominant raster first)
 raw_raster_list = arcpy.GetParameterAsText(1).split(';')
-#raw_raster_list = raw_raster_or_rasters.split(';') 
 
 # User selects Image Directory
 img_path = arcpy.GetParameterAsText(2)
@@ -98,56 +97,49 @@ arcpy.AddMessage('Generated Training Fields Mask: ' + str(training_fields_mask) 
 
 #--------------------------------------------------------------------------
 
-# 3. Assign pixels with value of 0 to NoData and reproject rasters 
+# 3. Reproject rasters 
 
-copied_raster_list = []
-copied_raster_name_list = []
-    
+reprojected_raster_list = []
+
 for i in raw_raster_list:
     
-    # Assign pixels with value of 0 to NoData
-    arcpy.SetRasterProperties_management(in_raster = i, data_type = '#', statistics = '#', stats_file = '#', nodata = '1 0; 2 0; 3 0; 4 0; 5 0; 6 0; 7 0; 8 0; 9 0; 10 0', key_properties = '#')
-    
-    arcpy.AddMessage('Set pixels with value of 0 to NoData')
-    
     # Reproject raster
-    reprojected_raster_name = os.path.splitext(i)[0] + '_Reprojected.img'
-    reprojected_raster = os.path.join(img_path, reprojected_raster_name)    
+    
+    reprojected_raster = os.path.splitext(i)[0] + '_Reprojected.img'
     arcpy.ProjectRaster_management(in_raster = i, out_raster = reprojected_raster, out_coor_system = edited_field_borders_shapefile)
     
     arcpy.AddMessage('Reprojected: ' + i)
 
     # Add copied raster to list as well as copied raster name to another list 
-    copied_raster_list.append(reprojected_raster)
-    copied_raster_name_list.append(reprojected_raster_name)
+    reprojected_raster_list.append(reprojected_raster)
 
 #--------------------------------------------------------------------------
 
 # 4. Mosaic rasters (if applicable)
 
-arcpy.env.snapRaster = copied_raster_list[0]
+arcpy.env.snapRaster = reprojected_raster_list[0]
 
 # If there is more than one passed through GUI by user in Raw Sentinel Image(s) multi-value parameter:
-if len(copied_raster_list) > 1:
+if len(reprojected_raster_list) > 1:
 
     # Set Mosaiced Raw Sentinel Image(s) name and path 
-    mosaic_raster_name = os.path.splitext(copied_raster_name_list[0])[0] + '_mosaic.img'
+    mosaic_raster_name = os.path.splitext(reprojected_raster_list[0])[0] + '_mosaic.img'
     mosaic_raster = os.path.join(img_path, mosaic_raster_name) 
 
     # Mosaic rasters if there is more than one
-    arcpy.Mosaic_management(inputs = copied_raster_list, target = copied_raster_list[0], mosaic_type = 'FIRST', colormap = 'FIRST', nodata_value = 0)
+    arcpy.Mosaic_management(inputs = reprojected_raster_list, target = reprojected_raster_list[0], mosaic_type = 'FIRST', colormap = 'FIRST', nodata_value = 65535)
 
-    arcpy.Rename_management(in_data = copied_raster_list[0], out_data = mosaic_raster_name)
-    arcpy.Delete_management(in_data = copied_raster_list[1])
+    arcpy.Rename_management(in_data = reprojected_raster_list[0], out_data = mosaic_raster_name)
+    arcpy.Delete_management(in_data = reprojected_raster_list[1])
     arcpy.AddMessage('Generated new mosaic raster: ' + mosaic_raster_name)
 
     raster = mosaic_raster # Used here so as to avoid duplicated code 
-    arcpy.AddMessage('Appended rasters to ' + str(copied_raster_list[0]) + ' to create mosaiced raster: ' + str(mosaic_raster_name))
+    arcpy.AddMessage('Appended rasters to ' + str(reprojected_raster_list[0]) + ' to create mosaiced raster: ' + str(mosaic_raster_name))
 
-# If only one raster is passed through GUI by user in Raw Sentinel Image(s) multi-value parameter:
+# Otherwise use single input raster
 else: 
-    raster = copied_raster_list[0] 
-
+    raster = reprojected_raster_list[0] 
+    
 #--------------------------------------------------------------------------
 
 # 5. Create three subsets from Mosaiced Raw Raster Sentinel Image(s) or Raw Sentinel Image 
@@ -179,6 +171,7 @@ if box_contains_raster == True:
     arcpy.env.mask = bounding_box
     out_aoi_raster = ExtractByMask(in_raster = raster, in_mask_data = bounding_box)
     out_aoi_raster.save(aoi_subset)    
+    del out_aoi_raster
     
     arcpy.AddMessage('Generated AOI Subset Raster: ' + aoi_subset)
 
@@ -191,6 +184,7 @@ if box_contains_raster == True:
     arcpy.env.mask = edited_field_borders_shapefile
     out_borders_raster = ExtractByMask(in_raster = raster, in_mask_data = edited_field_borders_shapefile)
     out_borders_raster.save(fields_subset)   
+    del out_borders_raster
     
     arcpy.AddMessage('Generated Field Borders Subset Raster: ' + fields_subset)
     
@@ -203,6 +197,7 @@ if box_contains_raster == True:
     arcpy.env.mask = training_fields_mask
     out_training_raster = ExtractByMask(in_raster = raster, in_mask_data = training_fields_mask)
     out_training_raster.save(training_subset)  
+    del out_training_raster
     
     arcpy.AddMessage('Generated Training Subset Raster: ' + training_subset)
 
