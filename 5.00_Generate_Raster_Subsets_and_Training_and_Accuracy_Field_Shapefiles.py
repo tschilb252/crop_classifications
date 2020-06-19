@@ -5,7 +5,7 @@
 # Name:             5.00_Generate_Raster_Subsets_and _Training_and_Accuracy_Field_Shapefiles.py
 # Author:           Kelly Meehan, USBR
 # Created:          20190724
-# Updated:          20200616 
+# Updated:          20200619 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
@@ -99,16 +99,19 @@ arcpy.AddMessage('Generated Training Fields Mask: ' + str(training_fields_mask) 
 
 # 3. Reproject rasters 
 
+# Assign variable to name of spatial reference of Edited Field Borders Shapefile
+borders_spatial_reference = arcpy.Describe(edited_field_borders_shapefile).spatialReference.name
+
 reprojected_raster_list = []
 
 for i in raw_raster_list:
     
     # Reproject raster
     
-    reprojected_raster = os.path.splitext(i)[0] + '_Reprojected.img'
+    reprojected_raster = os.path.splitext(i)[0] + '_' + borders_spatial_reference + '.img'
     arcpy.ProjectRaster_management(in_raster = i, out_raster = reprojected_raster, out_coor_system = edited_field_borders_shapefile)
     
-    arcpy.AddMessage('Reprojected: ' + i)
+    arcpy.AddMessage('Generated: ' + reprojected_raster)
 
     # Add copied raster to list as well as copied raster name to another list 
     reprojected_raster_list.append(reprojected_raster)
@@ -129,14 +132,37 @@ if len(reprojected_raster_list) > 1:
     # Mosaic rasters if there is more than one
     arcpy.Mosaic_management(inputs = reprojected_raster_list, target = reprojected_raster_list[0], mosaic_type = 'FIRST', colormap = 'FIRST', nodata_value = 65535)
 
-    arcpy.Rename_management(in_data = reprojected_raster_list[0], out_data = mosaic_raster_name)
-    arcpy.Delete_management(in_data = reprojected_raster_list[1])
-    arcpy.AddMessage('Generated new mosaic raster: ' + mosaic_raster_name)
+    # Try to rename first input raster as this is the file all others have been mosaiced to
+    try:
+        arcpy.Rename_management(in_data = reprojected_raster_list[0], out_data = mosaic_raster_name)
+    
+    # If an exception is raised (ExecuteError: ERROR 000012: *mosaic.img already exists), and first input raster cannot be renamed, execute the following
+    except Exception:
+        
+        arcpy.AddWarning('Cannot rename first input raster which is now a mosaic. After tool has completed running, please manually rename ' + reprojected_raster_list[0] + ' to ' + mosaic_raster)
+        
+        for a in reprojected_raster_list[1:]:
+            
+            # Keep first input raster so user can manually rename it; delete all other reprojected rasters
+            arcpy.Delete_management(in_data = a)
+            arcpy.AddMessage('Deleted intermediary raster: ' + a)
+        # Assign variable to first input raster so that it is used as base for subsequent subsets
+        raster = reprojected_raster_list[0]
+    
+    # If an exception is not raised, execute the following
+    else:
+        arcpy.AddMessage('Generated new mosaic raster: ' + mosaic_raster_name)
+        
+        for r in reprojected_raster_list:
+            
+            # Delete all intermediary rasters
+            arcpy.Delete_management(in_data = r)
+            arcpy.AddMessage('Deleted intermediary raster: ' + r)
+            
+    # Assign variable to mosaic raster
+    raster = mosaic_raster 
 
-    raster = mosaic_raster # Used here so as to avoid duplicated code 
-    arcpy.AddMessage('Appended rasters to ' + str(reprojected_raster_list[0]) + ' to create mosaiced raster: ' + str(mosaic_raster_name))
-
-# Otherwise use single input raster
+# If user only passes one raster, assign variable to the reprojected raster so that it is used as base for subsequent subsets 
 else: 
     raster = reprojected_raster_list[0] 
     
