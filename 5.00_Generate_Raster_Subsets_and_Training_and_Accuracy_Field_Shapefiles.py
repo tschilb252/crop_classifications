@@ -129,8 +129,6 @@ if len(reprojected_raster_list) > 1:
     mosaic_raster_name = os.path.splitext(reprojected_raster_list[0])[0] + '_mosaic.img'
     mosaic_raster = os.path.join(img_path, mosaic_raster_name) 
 
-#------------------ Test begin
-
     # Check that all rasters to be mosaiced have same no data value
     
     # Create list comprehension of no data value of reprojected rasters
@@ -139,8 +137,6 @@ if len(reprojected_raster_list) > 1:
     # If all no data values match, assign variable to this consistent no data value
     if len(set(no_data_list)) == 1:
         no_data_value = no_data_list[0]
-        
-#------------------ Test end
         
         # Mosaic rasters if there is more than one
         arcpy.Mosaic_management(inputs = reprojected_raster_list, target = reprojected_raster_list[0], mosaic_type = 'FIRST', colormap = 'FIRST', nodata_value = no_data_value)
