@@ -129,39 +129,57 @@ if len(reprojected_raster_list) > 1:
     mosaic_raster_name = os.path.splitext(reprojected_raster_list[0])[0] + '_mosaic.img'
     mosaic_raster = os.path.join(img_path, mosaic_raster_name) 
 
-    # Mosaic rasters if there is more than one
-    arcpy.Mosaic_management(inputs = reprojected_raster_list, target = reprojected_raster_list[0], mosaic_type = 'FIRST', colormap = 'FIRST', nodata_value = 65535)
+#------------------ Test begin
 
-    # Try to rename first input raster as this is the file all others have been mosaiced to
-    try:
-        arcpy.Rename_management(in_data = reprojected_raster_list[0], out_data = mosaic_raster_name)
+    # Check that all rasters to be mosaiced have same no data value
     
-    # If an exception is raised (ExecuteError: ERROR 000012: *mosaic.img already exists), and first input raster cannot be renamed, execute the following
-    except Exception:
+    # Create list comprehension of no data value of reprojected rasters
+    no_data_list = [arcpy.Raster(b).noDataValue for b in reprojected_raster_list]
+    
+    # If all no data values match, assign variable to this consistent no data value
+    if len(set(no_data_list)) == 1:
+        no_data_value = no_data_list[0]
         
-        arcpy.AddWarning('Cannot rename first input raster which is now a mosaic. After tool has completed running, please manually rename ' + reprojected_raster_list[0] + ' to ' + mosaic_raster)
+#------------------ Test end
         
-        for a in reprojected_raster_list[1:]:
+        # Mosaic rasters if there is more than one
+        arcpy.Mosaic_management(inputs = reprojected_raster_list, target = reprojected_raster_list[0], mosaic_type = 'FIRST', colormap = 'FIRST', nodata_value = no_data_value)
+    
+        # Try to rename first input raster as this is the file all others have been mosaiced to
+        try:
+            arcpy.Rename_management(in_data = reprojected_raster_list[0], out_data = mosaic_raster_name)
+        
+        # If an exception is raised (ExecuteError: ERROR 000012: *mosaic.img already exists), and first input raster cannot be renamed, execute the following
+        except Exception:
             
-            # Keep first input raster so user can manually rename it; delete all other reprojected rasters
-            arcpy.Delete_management(in_data = a)
-            arcpy.AddMessage('Deleted intermediary raster: ' + a)
-        # Assign variable to first input raster so that it is used as base for subsequent subsets
-        raster = reprojected_raster_list[0]
+            arcpy.AddWarning('Cannot rename first input raster which is now a mosaic. After tool has completed running, please manually rename ' + reprojected_raster_list[0] + ' to ' + mosaic_raster)
+            
+            for a in reprojected_raster_list[1:]:
+                
+                # Keep first input raster so user can manually rename it; delete all other reprojected rasters
+                arcpy.Delete_management(in_data = a)
+                arcpy.AddMessage('Deleted intermediary raster: ' + a)
+                
+            # Assign variable to first input raster so that it is used as base for subsequent subsets
+            raster = reprojected_raster_list[0]
+        
+        # If an exception is not raised, execute the following
+        else:
+            arcpy.AddMessage('Generated new mosaic raster: ' + mosaic_raster_name)
+            
+            for r in reprojected_raster_list:
+                
+                # Delete all intermediary rasters
+                arcpy.Delete_management(in_data = r)
+                arcpy.AddMessage('Deleted intermediary raster: ' + r)
+                
+        # Assign variable to mosaic raster
+        raster = mosaic_raster 
     
-    # If an exception is not raised, execute the following
     else:
-        arcpy.AddMessage('Generated new mosaic raster: ' + mosaic_raster_name)
-        
-        for r in reprojected_raster_list:
-            
-            # Delete all intermediary rasters
-            arcpy.Delete_management(in_data = r)
-            arcpy.AddMessage('Deleted intermediary raster: ' + r)
-            
-    # Assign variable to mosaic raster
-    raster = mosaic_raster 
-
+        arcpy.AddError('No data values for input rasters were not consistent, please examine no data values of input rasters to ensure consistency before mosaicing')
+        sys.exit(0)   
+    
 # If user only passes one raster, assign variable to the reprojected raster so that it is used as base for subsequent subsets 
 else: 
     raster = reprojected_raster_list[0] 
