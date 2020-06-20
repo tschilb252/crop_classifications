@@ -73,7 +73,10 @@ arcpy.CheckOutExtension('Spatial')
 region_and_time = os.path.basename(edited_field_borders_shapefile).rsplit(sep = '_', maxsplit = 1)[0]
 accuracy_fields_shapefile = os.path.join(covs_path, region_and_time + '_accuracy_fields.shp')
 
-arcpy.Select_analysis(in_features = edited_field_borders_shapefile, out_feature_class = accuracy_fields_shapefile, where_clause = ' "aa" = 2 ')
+# Add field delimiters to eliminate difference in SQL expression based on type of dataset being queried
+
+aa_SQL_clause = """{} = {}""".format(arcpy.AddFieldDelimiters(edited_field_borders_shapefile, 'aa'), 2)
+arcpy.Select_analysis(in_features = edited_field_borders_shapefile, out_feature_class = accuracy_fields_shapefile, where_clause = aa_SQL_clause)
 
 arcpy.AddMessage('Generated Accuracy Fields Shapefile: ' + str(accuracy_fields_shapefile) + ' in ' + str(covs_path))
 
@@ -81,7 +84,10 @@ arcpy.AddMessage('Generated Accuracy Fields Shapefile: ' + str(accuracy_fields_s
 
 training_fields_shapefile = os.path.join(covs_path, region_and_time + '_training_fields.shp')
 
-arcpy.Select_analysis(in_features = edited_field_borders_shapefile, out_feature_class = training_fields_shapefile, where_clause = ' "aa" = 1 ')
+# Add field delimiters to eliminate difference in SQL expression based on type of dataset being queried
+
+tr_SQL_clause = """{} = {}""".format(arcpy.AddFieldDelimiters(edited_field_borders_shapefile, 'aa'), 1)
+arcpy.Select_analysis(in_features = edited_field_borders_shapefile, out_feature_class = accuracy_fields_shapefile, where_clause = tr_SQL_clause)
 
 arcpy.AddMessage('Generated Training Fields Shapefile: ' + str(training_fields_shapefile) + ' in ' + str(covs_path))
 
@@ -128,6 +134,12 @@ if len(reprojected_raster_list) > 1:
     # Set Mosaiced Raw Sentinel Image(s) name and path 
     mosaic_raster_name = os.path.splitext(reprojected_raster_list[0])[0] + '_mosaic.img'
     mosaic_raster = os.path.join(img_path, mosaic_raster_name) 
+
+# Check for previously existing mosaic raster and delete if so as cannot be overwritten even with overwrite set to True
+
+if arcpy.Exists(mosaic_raster):
+    arcpy.Delete_management(in_data = mosaic_raster)
+    arcpy.AddMessage('Deleted pre-existing mosaic raster')
 
     # Check that all rasters to be mosaiced have same no data value
     
