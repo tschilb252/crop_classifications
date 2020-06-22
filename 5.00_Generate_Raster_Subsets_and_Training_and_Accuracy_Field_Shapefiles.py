@@ -5,14 +5,66 @@
 # Name:             5.00_Generate_Raster_Subsets_and _Training_and_Accuracy_Field_Shapefiles.py
 # Author:           Kelly Meehan, USBR
 # Created:          20190724
-# Updated:          20200619 
+# Updated:          20200622 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
 
 # Notes:            This script is intended to be used for a Script Tool within ArcGIS Pro; it is not intended as a stand-alone script.
 
-# Description:      This tool generates shapefile and raster subsets of a field border shapefile and Sentinel satellite image, respectively.  
+# Description:      This tool generates shapefile and raster subsets of a field border shapefile and satellite image(s), respectively.  
+
+#----------------------------------------------------------------------------------------------
+
+# Tool setup:       The script tool's properties can be set as follows: 
+#
+#                      Parameters tab:    
+#                           Edited Field Borders Shapefile  Feature Layer (Data Type) > Required (Type) > Input (Direction)                  
+#                           Raw Image(s) (priority order)   Raster Dataset-Multivalue (Data Type) > Required (Type) > Input (Direction)                  
+#                           Image Directory                 Workspace (Data Type) > Required (Type) > Input (Direction)                    
+#                           Shapefile Directory             Workspace (Data Type) > Required (Type) > Input (Direction)                    
+#
+#                       Validation tab:
+#
+# import arcpy
+
+# class ToolValidator(object):
+#     """Class for validating a tool's parameter values and controlling
+#     the behavior of the tool's dialog."""
+
+#     def __init__(self):
+#         """Setup arcpy and the list of tool parameters.""" 
+#         self.params = arcpy.GetParameterInfo()
+
+#     def initializeParameters(self):
+#         """Refine the properties of a tool's parameters. This method is 
+#         called when the tool is opened."""
+
+#     def updateParameters(self):
+#         """Modify the values and properties of parameters before internal
+#         validation is performed. This method is called whenever a parameter
+#         has been changed."""
+        
+#         # Set default directory for Shapefile Directory
+#         if self.params[0].value:
+#             if not self.params[3].altered:
+#                 covs_directory = os.path.dirname(self.params[0].value.value) 
+#                 self.params[3].value = covs_directory
+#                 shapefile_name = os.path.basename(self.params[0].value.value)
+#                 region_time_caps = shapefile_name.rsplit(sep = '_', maxsplit = 1)[0].upper()       
+#             
+#             # Set default directory for Image Directory        
+#             if not self.params[2].altered:         
+#                 img_directory = os.path.abspath(os.path.join(covs_directory, '..', 'img_' + region_time_caps))   
+#                 self.params[2].value = img_directory
+            
+#     def updateMessages(self):
+#         """Modify the messages created by internal validation for each tool
+#         parameter. This method is called after internal validation."""
+
+#     def isLicensed(self):
+#         """Set whether tool is licensed to execute."""
+#         return True
 
 ###############################################################################################
 ################################################################################################ 
@@ -23,7 +75,7 @@
 # 2. Create Training Fields Mask Shapefile, 30 meter inner buffer mask of Training Fields Shapefile
 # 3. Reproject rasters 
 # 4. Mosaic rasters (if applicable)
-# 5. Create three subsets from Mosaiced Raw Raster Sentinel Image(s) or Raw Sentinel Image 
+# 5. Create three subsets from Mosaiced Raw Raster Image(s) or Raw Image 
 
 #----------------------------------------------------------------------------------------------
 
@@ -40,7 +92,7 @@ from arcpy.sa import ExtractByMask
 # User selects Edited Field Borders Shapefile
 edited_field_borders_shapefile = arcpy.GetParameterAsText(0) 
 
-# User selects Raw Sentinel Image(s) in order of priority (dominant raster first)
+# User selects Raw Image(s) in order of priority (dominant raster first, etc.)
 raw_raster_list = arcpy.GetParameterAsText(1).split(';')
 
 # User selects Image Directory
@@ -112,14 +164,19 @@ reprojected_raster_list = []
 
 for i in raw_raster_list:
     
-    # Reproject raster
-    
     reprojected_raster = os.path.splitext(i)[0] + '_' + borders_spatial_reference + '.img'
+    
+    # Check if pre-existing raster exists and delete if so
+    if arcpy.Exists(reprojected_raster):
+        arcpy.Delete_management(in_data = reprojected_raster)
+        arcpy.AddMessage('Deleted pre-existing reprojected raster: ' + reprojected_raster)
+    
+    # Reproject raster
     arcpy.ProjectRaster_management(in_raster = i, out_raster = reprojected_raster, out_coor_system = edited_field_borders_shapefile)
     
     arcpy.AddMessage('Generated: ' + reprojected_raster)
 
-    # Add copied raster to list as well as copied raster name to another list 
+    # Add copied raster to list 
     reprojected_raster_list.append(reprojected_raster)
 
 #--------------------------------------------------------------------------
@@ -128,18 +185,18 @@ for i in raw_raster_list:
 
 arcpy.env.snapRaster = reprojected_raster_list[0]
 
-# If there is more than one passed through GUI by user in Raw Sentinel Image(s) multi-value parameter:
+# If there is more than one passed through GUI by user in Raw Image(s) multi-value parameter:
 if len(reprojected_raster_list) > 1:
 
-    # Set Mosaiced Raw Sentinel Image(s) name and path 
+    # Set Mosaiced Raw Image(s) name and path 
     mosaic_raster_name = os.path.splitext(reprojected_raster_list[0])[0] + '_mosaic.img'
     mosaic_raster = os.path.join(img_path, mosaic_raster_name) 
 
-# Check for previously existing mosaic raster and delete if so as cannot be overwritten even with overwrite set to True
-
-if arcpy.Exists(mosaic_raster):
-    arcpy.Delete_management(in_data = mosaic_raster)
-    arcpy.AddMessage('Deleted pre-existing mosaic raster')
+    # Check for previously existing mosaic raster and delete if so as cannot be overwritten even with overwrite set to True
+    
+    if arcpy.Exists(mosaic_raster):
+        arcpy.Delete_management(in_data = mosaic_raster)
+        arcpy.AddMessage('Deleted pre-existing mosaic raster')
 
     # Check that all rasters to be mosaiced have same no data value
     
@@ -194,7 +251,7 @@ else:
     
 #--------------------------------------------------------------------------
 
-# 5. Create three subsets from Mosaiced Raw Raster Sentinel Image(s) or Raw Sentinel Image 
+# 5. Create three subsets from Mosaiced Raw Raster Image(s) or Raw Image 
 
 # Reset snap raster environment parameter
 arcpy.env.snapRaster = raster
