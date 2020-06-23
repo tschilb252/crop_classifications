@@ -105,8 +105,9 @@
 # 12. Convert Label Frequency Table to Excel table
 # 13. Rename MAJORITY attribute table field name to MAJORITY** in Edited Field Borders Shapefile, allowing subsequent iterations to reuse the name MAJORITY
 # 14. Create Bad Label Shapefile representing training fields misclassified
-# 15. Cross-tabulate area of misclassified pixels by Signame and CROP_TYPE
-# 16. Generate Bad Signame Excel Workbook, a pivoted and manipulated version of Bad Signame Geodatabase Table
+# 15. Generate Label Shapefile that were training fields, regardless of whether classified correctly or not
+# 16. Cross-tabulate area of misclassified pixels by Signame and CROP_TYPE
+# 17. Generate Bad Signame Excel Workbook, a pivoted and manipulated version of Bad Signame Geodatabase Table
 
 #----------------------------------------------------------------------------------------------
 
@@ -338,7 +339,7 @@ for field in field_borders_fields:
 
 #----------------------------------------------------------------------------------------------
 
-# 14.0 Create Bad Label Shapefile representing training fields misclassified
+# 14. Create Bad Label Shapefile representing training fields misclassified
 
 bad_shapefile_name = region_and_time_caps + '_bad_label_' + iteration_number + '.shp'
 bad_shapefile = os.path.join(covs_path, bad_shapefile_name)
@@ -349,7 +350,7 @@ arcpy.AddMessage('Created Bad Label Shapefile')
 
 #----------------------------------------------------------------------------------------------
 
-# 14.1 Training Label Shapefile, a subset of Label Shapefile that were training fields, regardless of whether classified correctly or not
+# 15. Generate training Label Shapefile, a subset of Label Shapefile that were training fields, regardless of whether classified correctly or not
 
 training_label_shapefile_name = region_and_time_caps + '_training_label_' + iteration_number + '.shp'
 training_label_shapefile = os.path.join(covs_path, training_label_shapefile_name)
@@ -360,7 +361,7 @@ arcpy.AddMessage('Created Training Label Shapefile')
 
 #----------------------------------------------------------------------------------------------
 
-# 15. Cross-tabulate area of misclassified pixels by Signame and CROP_TYPE
+# 16. Cross-tabulate area of misclassified pixels by Signame and CROP_TYPE
 
 # Create Bad Signame Geodatabase Table, a cross-tabulation of area for each misclassified CROP_TYPE by responsible Signame
 #   Each row represents misclassified crop types (found within Bad Label Shapefile)
@@ -371,7 +372,20 @@ arcpy.AddMessage('Created Training Label Shapefile')
 bad_sig_table_name = region_and_time_caps + '_bad_signames_' + iteration_number
 bad_sig_table = os.path.join(gdb_path, bad_sig_table_name)
 
-TabulateArea(in_zone_data = bad_shapefile, zone_field = 'crop', in_class_data = classified_tiff, class_field = 'Value', out_table = bad_sig_table)
+# Try to generate Bad Signame Geodatabase Table
+try:
+    TabulateArea(in_zone_data = bad_shapefile, zone_field = 'crop', in_class_data = classified_tiff, class_field = 'Value', out_table = bad_sig_table)
+
+# If an exception is raised (Execute Error: ERROR 010151: No features found) catch and handle it by giving warning and proceeding
+
+except arcpy.ExecuteError:
+    e = sys.exc_info()[1]
+    arcpy.AddWarning(e.args[0])
+    result = arcpy.GetCount_management(bad_shapefile)
+    if int(result[0]) > 0:
+        pass
+    else:
+        arcpy.AddWarning('Bad Label Shapefile has no features and so Bad Signame Geodatabase Table was not generated. Continuing...')
 
 # Create Training Label Signame Geodatabase Table, a cross-tabulation of area for Signame for all training fields regardless of whether they were misclassified or not
 #   Rows, columns, and values represent the same as in Bad Signame Geodatabase Table 
@@ -384,9 +398,9 @@ TabulateArea(in_zone_data = training_label_shapefile, zone_field = 'crop', in_cl
 
 #----------------------------------------------------------------------------------------------
 
-# 16. Create pandas data frame from Training Label Signame Geodatabase Table
+# 17. Generate Bad Signame Excel Workbook, a pivoted and manipulated version of Bad Signame Geodatabase Table
 
-# Create numpy array from Bad Signame Table Geodatabase Table
+# Create numpy array from Training Label Signame Geodatabase Table
 numpy_array_training_label_sig = arcpy.da.TableToNumPyArray(in_table = training_label_sig_table, field_names = '*')
 
 # Create pandas data frame from numpy array
