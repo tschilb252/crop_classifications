@@ -105,7 +105,7 @@
 # 12. Convert Label Frequency Table to Excel table
 # 13. Rename MAJORITY attribute table field name to MAJORITY** in Edited Field Borders Shapefile, allowing subsequent iterations to reuse the name MAJORITY
 # 14. Create Bad Label Shapefile representing training fields misclassified
-# 15. Create Bad Signame Geodatabase Table, a cross-tabulation of area for each misclassified CROP_TYPE by responsible Signame
+# 15. Cross-tabulate area of misclassified pixels by Signame and CROP_TYPE
 # 16. Generate Bad Signame Excel Workbook, a pivoted and manipulated version of Bad Signame Geodatabase Table
 
 #----------------------------------------------------------------------------------------------
@@ -360,7 +360,7 @@ arcpy.AddMessage('Created Training Label Shapefile')
 
 #----------------------------------------------------------------------------------------------
 
-# 15. Cross-tabulate area
+# 15. Cross-tabulate area of misclassified pixels by Signame and CROP_TYPE
 
 # Create Bad Signame Geodatabase Table, a cross-tabulation of area for each misclassified CROP_TYPE by responsible Signame
 #   Each row represents misclassified crop types (found within Bad Label Shapefile)
