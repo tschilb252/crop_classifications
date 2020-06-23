@@ -5,7 +5,7 @@
 # Name:             7.50_Recode_through_BadLabel.py
 # Author:           Kelly Meehan, USBR
 # Created:          20180618
-# Updated:          20200609 
+# Updated:          20200623 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
@@ -360,24 +360,31 @@ arcpy.AddMessage('Created Training Label Shapefile')
 
 #----------------------------------------------------------------------------------------------
 
-# 15. Create Bad Signame Geodatabase Table, a cross-tabulation of area for each misclassified CROP_TYPE by responsible Signame
+# 15. Cross-tabulate area
+
+# Create Bad Signame Geodatabase Table, a cross-tabulation of area for each misclassified CROP_TYPE by responsible Signame
+#   Each row represents misclassified crop types (found within Bad Label Shapefile)
+#   Each column represents the corresponding signame that was responsible for the wrong label
+#       Note that the column headers read VALUE_*, which correspond to an actual Signame within Classified Tiff; the prefix Value is given as a geodatabase table cannot start with a number and tabulate area runs off of Value 
+#   Values within the table are total area in meters of misclassified training fields broken up CROP_TYPE and a value (corresponding to a Signame within Classified Tiff)
 
 bad_sig_table_name = region_and_time_caps + '_bad_signames_' + iteration_number
 bad_sig_table = os.path.join(gdb_path, bad_sig_table_name)
 
-# Generate table where each row represents misclassified crop types, each column represents the corresponding signames and values representing total area in meters
 TabulateArea(in_zone_data = bad_shapefile, zone_field = 'crop', in_class_data = classified_tiff, class_field = 'Value', out_table = bad_sig_table)
 
-# 15. Create Training Label Signame Geodatabase Table, a cross-tabulation of area for Signame
+# Create Training Label Signame Geodatabase Table, a cross-tabulation of area for Signame for all training fields regardless of whether they were misclassified or not
+#   Rows, columns, and values represent the same as in Bad Signame Geodatabase Table 
+#   Analysis is merely expanded to cover all training fields, not merely those misclassified (as the signature could still be contributing to the cumulative effect of mislabeling fields
+
 training_label_sig_table_name = region_and_time_caps + '_training_label_signames_' + iteration_number
 training_label_sig_table = os.path.join(gdb_path, training_label_sig_table_name)
 
-# Generate table where each row represents misclassified crop types, each column represents the corresponding signames and values representing total area in meters
 TabulateArea(in_zone_data = training_label_shapefile, zone_field = 'crop', in_class_data = classified_tiff, class_field = 'Value', out_table = training_label_sig_table)
 
 #----------------------------------------------------------------------------------------------
 
-# 16 Create pandas data frame from Bad Signame Geodatabase Table
+# 16. Create pandas data frame from Training Label Signame Geodatabase Table
 
 # Create numpy array from Bad Signame Table Geodatabase Table
 numpy_array_training_label_sig = arcpy.da.TableToNumPyArray(in_table = training_label_sig_table, field_names = '*')
@@ -385,7 +392,7 @@ numpy_array_training_label_sig = arcpy.da.TableToNumPyArray(in_table = training_
 # Create pandas data frame from numpy array
 pandas_training_label_sig = pandas.DataFrame(data = numpy_array_training_label_sig)
 
-# 16.1 Replace column names from Bad Signame Geodatabase Table (derived from Reclassified Tiff attribute table, Value) to match corresponding Signame
+# Replace column names from Bad Signame Geodatabase Table (derived from Reclassified Tiff attribute table, Value) to match corresponding Signame
 
 # Create dictionary from Classified Tiff where key: value is Value: Class_Name
 sig_dictionary = {}
@@ -405,7 +412,7 @@ for k, v in sig_dictionary.items():
 # Replace column headers in data frame with Signame by using dictionary
 pandas_training_label_sig.rename(columns = sig_dictionary, inplace = True) 
 
-# 16.2 Manipulate and pivot pandas data frame 
+# Manipulate and pivot pandas data frame 
 
 # Delete OBJECTID column
 pandas_training_label_sig.drop('OBJECTID', axis = 1, inplace = True)
@@ -444,7 +451,7 @@ pandas_training_label_sig['Bad'] = 0
 # Create a new column that will be the normazized index (i.e. ranging from -1 to 1) of badness, where 1 is the worst (i.e. signature always classified incorrectly)
 pandas_training_label_sig['Badness_Index'] = 0
 
-# 16.3 For each signature, aggregate area based on whether it was good (i.e. for the correct crop), or bad (i.e. classified area known to be another crop)
+# For each signature, aggregate area based on whether it was good (i.e. for the correct crop), or bad (i.e. classified area known to be another crop)
 
 # Loop through each column, then loop through each row and if the Crop_label value for that row is the same as the column you're looping through, add that value to Good, otherwise add to Bad column
 for h in column_headers:
