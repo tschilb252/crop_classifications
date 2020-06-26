@@ -21,7 +21,66 @@
 #                           Project_Geodatabase             Workspace (Data Type) > Required (Type) > Direction (Input) 
 #                           Ground_Truth_Feature_Class      Feature Layer (Data Type) > Required (Type) > Direction (Input) 
 #                           Region                          String (Data Type) > Required (Type) > Direction (Input) 
+#
+#                       Validation tab:
 
+# import arcpy
+
+# class ToolValidator(object):
+#     """Class for validating a tool's parameter values and controlling
+#     the behavior of the tool's dialog."""
+
+#     def __init__(self):
+#         """Setup arcpy and the list of tool parameters.""" 
+#         self.params = arcpy.GetParameterInfo()
+
+#     def initializeParameters(self): 
+#         """Refine the properties of a tool's parameters. This method is 
+#         called when the tool is opened."""
+
+#     def updateParameters(self):
+#         """Modify the values and properties of parameters before internal
+#         validation is performed. This method is called whenever a parameter
+#         has been changed."""
+        
+#         # Set default value for argument passed to Project Geodatabase parameter to the default geodatabase of the current aprx file from which tool is run
+#         if not self.params[0].altered:
+#             aprx = arcpy.mp.ArcGISProject('CURRENT')
+#             self.params[0].value = aprx.defaultGeodatabase
+        
+#         # Generate a drop down value list for Region parameter based on unique values of REGION attribute table field of Ground Truth Feature Class
+#         if self.params[1].value:
+#             self.params[2].filter.list = sorted({row[0] for row in arcpy.da.SearchCursor(in_table = self.params[1].value.value, field_names = 'REGION')}) 
+            
+#             # Set default value for argument passed to Region parameter 
+#             if not self.params[2].altered:
+#                 self.params[2].value = os.path.basename(self.params[0].value.value).upper().split('_')[0]     
+        
+#     def updateMessages(self):
+#         """Modify the messages created by internal validation for each tool
+#         parameter. This method is called after internal validation."""
+        
+#         # Set warning if time period (T*) of Ground Truth Feature class does not correspond with that of analysis
+#         if self.params[0].value and self.params[1].value and self.params[2].value:
+#             geodatabase_value = self.params[0].value.value
+#             region_time_caps = os.path.splitext(os.path.basename(geodatabase_value))[0].upper()
+#             region = self.params[2].value
+#             time = region_time_caps.split('_')[1]
+#             year = region_time_caps.split('_')[2]
+#             ground_features = self.params[1].value.value
+#             ground_features_upper = ground_features.upper()
+                      
+#             if time not in ground_features_upper:
+#                 self.params[1].setWarningMessage('Time period (T*) of Ground Truth Feature Class selected does not seem to correspond with that of analysis')
+            
+#             # Set warning if year of Ground Truth Feature class does not correspond with that of analysis
+#             if year not in ground_features_upper:
+#                 self.params[1].setWarningMessage('Year of Ground Truth Feature Class selected does not seem to correspond with that of analysis')
+
+#             # Set warning if value of argument passed to Region parameter does not correspond with that analysis
+#             if region not in region_time_caps:
+#                 self.params[2].setWarningMessage('Region selected does not seem to correspond with that of analysis')
+                
 ###############################################################################################
 ###############################################################################################
 
@@ -49,9 +108,6 @@ project_geodatabase = arcpy.env.workspace = arcpy.GetParameterAsText(0)
 # User selects ground truth feature class
 ground_truth_feature_class = arcpy.GetParameterAsText(1) 
 
-# Assign variable to attribute table field name to be used to filter feature class
-input_field = 'REGION'
-
 # User types region name 
 input_region = arcpy.GetParameterAsText(2)
 
@@ -69,7 +125,7 @@ arcpy.env.overwriteOutput = True
 def generate_regional_subset():
         
     # Extract basename from geodatabase
-    region_and_time = os.path.splitext(os.path.basename(project_geodatabase))[0] 
+    region_and_time = os.path.splitext(os.path.basename(project_geodatabase))[0].upper() 
     
     # Set new feature class name to basename 
     field_borders_feature_class = os.path.join(project_geodatabase, region_and_time)
