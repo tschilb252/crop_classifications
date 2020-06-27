@@ -5,7 +5,7 @@
 # Name:             0.10_Create_Regional_Feature_Classes.py
 # Author:           Kelly Meehan, USBR
 # Created:          20190922
-# Updated:          20200625 
+# Updated:          20200626 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro and Spatial Analyst Extension
@@ -18,9 +18,10 @@
 
 # Tool setup:       The script tool's properties can be set as follows: 
 #                      Parameters tab:    
-#                           Project_Geodatabase             Workspace (Data Type) > Required (Type) > Direction (Input) 
-#                           Ground_Truth_Feature_Class      Feature Layer (Data Type) > Required (Type) > Direction (Input) 
-#                           Region                          String (Data Type) > Required (Type) > Direction (Input) 
+#                           Project Geodatabase             Workspace (Data Type) > Required (Type) > Input (Direction) 
+#                           Ground Truth Feature Class      Feature Layer (Data Type) > Required (Type) > Input (Direction) 
+#                           Region                          String (Data Type) > Required (Type) > Input (Direction) 
+#                           Field Borders Feature Class      Feature Class (Data Type) > Required (Type) > Output (Direction) 
 #
 #                       Validation tab:
 
@@ -44,9 +45,17 @@
 #         has been changed."""
         
 #         # Set default value for argument passed to Project Geodatabase parameter to the default geodatabase of the current aprx file from which tool is run
+        
 #         if not self.params[0].altered:
 #             aprx = arcpy.mp.ArcGISProject('CURRENT')
-#             self.params[0].value = aprx.defaultGeodatabase
+#             project_geodatabase_value = aprx.defaultGeodatabase
+#             self.params[0].value = project_geodatabase_value
+        
+#         if self.params[0].value and not self.params[3].altered:
+#             self.params[3].value = os.path.basename(self.params[0].value.value).split('.')[0]
+        
+#         if self.params[0].altered and not self.params[3].altered:
+#             self.params[3].value = os.path.basename(self.params[0].value.value).split('.')[0]    
         
 #         # Generate a drop down value list for Region parameter based on unique values of REGION attribute table field of Ground Truth Feature Class
 #         if self.params[1].value:
@@ -61,7 +70,7 @@
 #         parameter. This method is called after internal validation."""
         
 #         # Set warning if time period (T*) of Ground Truth Feature class does not correspond with that of analysis
-#         if self.params[0].value and self.params[1].value and self.params[2].value:
+#         if self.params[0].value and self.params[1].value and self.params[2].value and self.params[3].value:
 #             geodatabase_value = self.params[0].value.value
 #             region_time_caps = os.path.splitext(os.path.basename(geodatabase_value))[0].upper()
 #             region = self.params[2].value
@@ -102,14 +111,17 @@ import arcpy, os, pandas
 
 # 0.1 Read in tool parameters
 
-# User selects file geodatabase for region (YYYY_T*_<REGION>.gdb) 
+# User selects Project Geodatabase
 project_geodatabase = arcpy.env.workspace = arcpy.GetParameterAsText(0)
 
-# User selects ground truth feature class
+# User selects Ground Truth Feature Class
 ground_truth_feature_class = arcpy.GetParameterAsText(1) 
 
-# User types region name 
+# User selects region for analysis
 input_region = arcpy.GetParameterAsText(2)
+
+# User provides output Field Borders Feature Class 
+field_borders_feature_class = arcpy.GetParameterAsText(3)
 
 #--------------------------------------------
 
@@ -126,10 +138,7 @@ def generate_regional_subset():
         
     # Extract basename from geodatabase
     region_and_time = os.path.splitext(os.path.basename(project_geodatabase))[0].upper() 
-    
-    # Set new feature class name to basename 
-    field_borders_feature_class = os.path.join(project_geodatabase, region_and_time)
-    
+        
     # Clear selection of Ground Truth Feature Class so as to avoid a prior selection limiting the number of records copied
     arcpy.SelectLayerByAttribute_management(in_layer_or_view = ground_truth_feature_class, selection_type = 'CLEAR_SELECTION')
     
