@@ -5,21 +5,72 @@
 # Name:             0.30_Rank_Fields_by_Heterogeneity.py
 # Author:           Kelly Meehan, USBR
 # Created:          20200629
-# Updated:          20200629 
+# Updated:          20200701 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro and Spatial Analyst Extension
 
 # Notes:            This script is intended to be used for a Script Tool within ArcGIS Pro; it is not intended as a stand-alone script.
 
-# Description       This tool ranks all fields by.
+# Description       This tool assigns all fields a rank heterogeneity value, where 1 is the field with the greatest heterogeneity.
 
 #----------------------------------------------------------------------------------------------
 
 # Tool setup:       The script tool's properties can be set as follows: 
 #                      Parameters tab:    
-#                           Field Borders Feature Class      Feature Class (Data Type) > Required (Type) > Output (Direction) 
+#                           Field Borders Feature Class     Feature Class (Data Type) > Required (Type) > Input (Direction) 
+#                           Project Geodatabase             Workspace (Data Type) > Required (Type) > Input (Direction) 
+#                           Raw Raster                      Raster Dataset (Data Type) > Required (Type) > Input (Direction) 
+#                           Blue Band                       String (Data Type) > Required (Type) > Input (Direction) 
+#                           Green Band                      String (Data Type) > Required (Type) > Input (Direction) 
+#                           Red Band                        String (Data Type) > Required (Type) > Input (Direction) 
+#                           NIR Band                        String (Data Type) > Required (Type) > Input (Direction) 
 
+#                       Validation tab:
+
+# import arcpy
+
+# class ToolValidator(object):
+#     """Class for validating a tool's parameter values and controlling
+#     the behavior of the tool's dialog."""
+
+#     def __init__(self):
+#         """Setup arcpy and the list of tool parameters.""" 
+#         self.params = arcpy.GetParameterInfo()
+
+#     def initializeParameters(self):
+#         """Refine the properties of a tool's parameters. This method is 
+#         called when the tool is opened."""
+
+#     def updateParameters(self):
+#         """Modify the values and properties of parameters before internal
+#         validation is performed. This method is called whenever a parameter
+#         has been changed."""
+        
+#         # Set default value for argument passed to Project Geodatabase
+#         if self.params[0].value:
+#             if not self.params[1].altered:
+#                 self.params[1].value = os.path.dirname(self.params[0].value.value)
+        
+#         # Generate a drop down value list of Layers within Raw Raster 
+#         if self.params[2].value:
+#             layer_list = []
+#             desc = arcpy.Describe(self.params[2].value)
+#             for child in desc.children:
+#                 layer_list.append(child.name) 
+#             self.params[3].filter.list = layer_list
+#             self.params[4].filter.list = layer_list
+#             self.params[5].filter.list = layer_list
+#             self.params[6].filter.list = layer_list
+            
+#     def updateMessages(self):
+#         """Modify the messages created by internal validation for each tool
+#         parameter. This method is called after internal validation."""
+
+#     def isLicensed(self):
+#         """Set whether tool is licensed to execute."""
+#         return True
+    
 ###############################################################################################
 ###############################################################################################
 
@@ -85,6 +136,7 @@ def calculate_band_standard_deviation(feature_class, raster, blue, green, red, n
     sd_fields_list = []
     for key, value in layer_dict.items():
         layer = os.path.join(raster, value)
+        arcpy.AddMessage('Layer: ' + layer)
         sd_table_name = key + '_sd_table'
         sd_table = os.path.join(project_geodatabase, sd_table_name)
         arcpy.sa.ZonalStatisticsAsTable(in_zone_data = feature_class, zone_field = 'FIELD_ID', in_value_raster = layer, out_table = sd_table, statistics_type = 'STD')
