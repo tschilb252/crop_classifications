@@ -5,7 +5,7 @@
 # Name:             5.00_Generate_Raster_Subsets_and _Training_and_Accuracy_Field_Shapefiles.py
 # Author:           Kelly Meehan, USBR
 # Created:          20190724
-# Updated:          20200622 
+# Updated:          20200701 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
@@ -139,7 +139,7 @@ training_fields_shapefile = os.path.join(covs_path, region_and_time + '_training
 # Add field delimiters to eliminate difference in SQL expression based on type of dataset being queried
 
 tr_SQL_clause = """{} = {}""".format(arcpy.AddFieldDelimiters(edited_field_borders_shapefile, 'aa'), 1)
-arcpy.Select_analysis(in_features = edited_field_borders_shapefile, out_feature_class = accuracy_fields_shapefile, where_clause = tr_SQL_clause)
+arcpy.Select_analysis(in_features = edited_field_borders_shapefile, out_feature_class = training_fields_shapefile, where_clause = tr_SQL_clause)
 
 arcpy.AddMessage('Generated Training Fields Shapefile: ' + str(training_fields_shapefile) + ' in ' + str(covs_path))
 
