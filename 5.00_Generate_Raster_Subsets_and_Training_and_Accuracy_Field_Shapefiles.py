@@ -160,36 +160,45 @@ arcpy.AddMessage('Generated Training Fields Mask: ' + str(training_fields_mask) 
 # Assign variable to name of spatial reference of Edited Field Borders Shapefile
 borders_spatial_reference = arcpy.Describe(edited_field_borders_shapefile).spatialReference.name
 
-reprojected_raster_list = []
+arcpy.AddMessage('Edited Field Borders Shapefile has a projection of: ' + borders_spatial_reference)
 
-for i in raw_raster_list:
-    
-    reprojected_raster = os.path.splitext(i)[0] + '_' + borders_spatial_reference + '.img'
-    
-    # Check if pre-existing raster exists and delete if so
-    if arcpy.Exists(reprojected_raster):
-        arcpy.Delete_management(in_data = reprojected_raster)
-        arcpy.AddMessage('Deleted pre-existing reprojected raster: ' + reprojected_raster)
-    
-    # Reproject raster
-    arcpy.ProjectRaster_management(in_raster = i, out_raster = reprojected_raster, out_coor_system = edited_field_borders_shapefile)
-    
-    arcpy.AddMessage('Generated: ' + reprojected_raster)
+# Create a list (used for mosaicing in next step) originally comprised of raw rasters that are replaced if necessary with reprojected ones 
+raster_list = raw_raster_list
 
-    # Add copied raster to list 
-    reprojected_raster_list.append(reprojected_raster)
-
+for (i, raster) in enumerate(raster_list):
+    arcpy.AddMessage(raster + ' has a projection of: ' + arcpy.Describe(raster).spatialReference.name)
+    
+    # If the raster has a projection other than that of Edited Field Borders Shapefile, replace itself with a reprojected version 
+    if arcpy.Describe(raster).spatialReference.name != borders_spatial_reference:
+        arcpy.AddMessage('Projection of ' + raster + ' does not match that of Edited Field Borders Shapefile; reprojecting.')
+        reprojected_raster = os.path.splitext(raster)[0] + '_' + borders_spatial_reference + '.img'
+        
+        # Check if pre-existing raster exists and delete if so
+        if arcpy.Exists(reprojected_raster):
+            arcpy.Delete_management(in_data = reprojected_raster)
+            arcpy.AddMessage('Deleted pre-existing reprojected raster: ' + reprojected_raster)
+        
+        # Reproject raster
+        arcpy.ProjectRaster_management(in_raster = raster, out_raster = reprojected_raster, out_coor_system = edited_field_borders_shapefile)
+        arcpy.AddMessage('Generated: ' + reprojected_raster)
+        
+        # Replace original raster with that of reprojected raster
+        raster_list[i] = reprojected_raster
+    
+    else:
+        arcpy.AddMessage(raster + ' projection matches that of Edited Field Border Shapefile; reprojection not necessary.')
+        
 #--------------------------------------------------------------------------
 
 # 4. Mosaic rasters (if applicable)
 
-arcpy.env.snapRaster = reprojected_raster_list[0]
+arcpy.env.snapRaster = raster_list[0]
 
 # If there is more than one passed through GUI by user in Raw Image(s) multi-value parameter:
-if len(reprojected_raster_list) > 1:
+if len(raster_list) > 1:
 
     # Set Mosaiced Raw Image(s) name and path 
-    mosaic_raster_name = os.path.splitext(reprojected_raster_list[0])[0] + '_mosaic.img'
+    mosaic_raster_name = os.path.splitext(raster_list[0])[0] + '_mosaic.img'
     mosaic_raster = os.path.join(img_path, mosaic_raster_name) 
 
     # Check for previously existing mosaic raster and delete if so as cannot be overwritten even with overwrite set to True
@@ -201,38 +210,38 @@ if len(reprojected_raster_list) > 1:
     # Check that all rasters to be mosaiced have same no data value
     
     # Create list comprehension of no data value of reprojected rasters
-    no_data_list = [arcpy.Raster(b).noDataValue for b in reprojected_raster_list]
+    no_data_list = [arcpy.Raster(b).noDataValue for b in raster_list]
     
     # If all no data values match, assign variable to this consistent no data value
     if len(set(no_data_list)) == 1:
         no_data_value = no_data_list[0]
         
         # Mosaic rasters if there is more than one
-        arcpy.Mosaic_management(inputs = reprojected_raster_list, target = reprojected_raster_list[0], mosaic_type = 'FIRST', colormap = 'FIRST', nodata_value = no_data_value)
+        arcpy.Mosaic_management(inputs = raster_list, target = raster_list[0], mosaic_type = 'FIRST', colormap = 'FIRST', nodata_value = no_data_value)
     
         # Try to rename first input raster as this is the file all others have been mosaiced to
         try:
-            arcpy.Rename_management(in_data = reprojected_raster_list[0], out_data = mosaic_raster_name)
+            arcpy.Rename_management(in_data = raster_list[0], out_data = mosaic_raster_name)
         
         # If an exception is raised (ExecuteError: ERROR 000012: *mosaic.img already exists), and first input raster cannot be renamed, execute the following
         except Exception:
             
-            arcpy.AddWarning('Cannot rename first input raster which is now a mosaic. After tool has completed running, please manually rename ' + reprojected_raster_list[0] + ' to ' + mosaic_raster)
+            arcpy.AddWarning('Cannot rename first input raster which is now a mosaic. After tool has completed running, please manually rename ' + raster_list[0] + ' to ' + mosaic_raster)
             
-            for a in reprojected_raster_list[1:]:
+            for a in raster_list[1:]:
                 
                 # Keep first input raster so user can manually rename it; delete all other reprojected rasters
                 arcpy.Delete_management(in_data = a)
                 arcpy.AddMessage('Deleted intermediary raster: ' + a)
                 
             # Assign variable to first input raster so that it is used as base for subsequent subsets
-            raster = reprojected_raster_list[0]
+            raster = raster_list[0]
         
         # If an exception is not raised, execute the following
         else:
             arcpy.AddMessage('Generated new mosaic raster: ' + mosaic_raster_name)
             
-            for r in reprojected_raster_list:
+            for r in raster_list:
                 
                 # Delete all intermediary rasters
                 arcpy.Delete_management(in_data = r)
@@ -247,7 +256,7 @@ if len(reprojected_raster_list) > 1:
     
 # If user only passes one raster, assign variable to the reprojected raster so that it is used as base for subsequent subsets 
 else: 
-    raster = reprojected_raster_list[0] 
+    raster = raster_list[0] 
     
 #--------------------------------------------------------------------------
 
