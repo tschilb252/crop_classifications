@@ -20,16 +20,18 @@
 # Tool setup:       The script tool's properties can be set as follows: 
 #
 #                      Parameters tab:    
-#                           Classified Raster               Raster Layer (Data Type) > Required (Type) > Input (Direction)                  
+#                           Classified Raster               Raster Layer (Data Type) > Required (Type) > Input (Direction)  
 #                           Field Borders Feature Class     Feature Layer (Data Type) > Required (Type) > Input (Direction)
 #                           Image Directory                 Workspace (Data Type) > Required (Type) > Input (Direction)                    
 #                           Shapefile Directory             Workspace (Data Type) > Required (Type) > Input (Direction)                    
 #                           Documents Directory             Workspace (Data Type) > Required (Type) > Input (Direction)                    
 #                           Geodatabase                     Workspace (Data Type) > Required (Type) > Input (Direction)
+#                           Iteration Number                String (Data Type) > Required (Type) > Input (Direction)
 #
 #                       Validation tab:
 #
-# import arcpy
+
+# import arcpy, re
 
 # class ToolValidator(object):
 #     """Class for validating a tool's parameter values and controlling
@@ -56,8 +58,13 @@
 #                 img_directory = os.path.dirname(self.params[0].value.value)
 #                 covs_directory = os.path.abspath(os.path.join(img_directory, '..', 'covs_' + region_time_caps))
 #                 edtd_shp = os.path.join(covs_directory, region_time_caps + '_edtd.shp')
-#                 self.params[1].value = edtd_shp
-            
+#                 iteration = re.split('[_.]', os.path.basename(raster_name))[4]
+#                 self.params[1].value = edtd_shp  
+                
+#         # Set a default value for Iteration Number
+#             if not self.params[6].altered: 
+#                 self.params[6].value = iteration
+                     
 #         # Set a default value for Image Directory
 #         if self.params[1].value:
 #             if not self.params[2].altered:
@@ -76,15 +83,21 @@
 #             if not self.params[5].altered:
 #                 gdb_directory = os.path.abspath(os.path.join(covs_directory, '..', region_time_caps + '.gdb'))
 #                 self.params[5].value = gdb_directory
-                      
+                             
 #     def updateMessages(self):
 #         """Modify the messages created by internal validation for each tool
 #         parameter. This method is called after internal validation."""
+        
+#         # Ensure that Iteration Number is a two digit value
+#         if self.params[6].value:
+#             iteration_value = self.params[6].value
+#             if len(iteration_value) != 2 or not iteration_value.isdigit():
+#                 self.params[6].setWarningMessage('{0} is not an appropriate value to pass to Iteration Number parameter. Please provide a two digit integer (e.g. for first iteration input 01)'.format(iteration_value))
 
 #     def isLicensed(self):
 #         """Set whether tool is licensed to execute."""
 #         return True
-
+    
 ###############################################################################################
 ###############################################################################################
 
@@ -139,6 +152,9 @@ docs_path = arcpy.GetParameterAsText(4)
 
 # User selects Project Geodatabase
 gdb_path = arcpy.GetParameterAsText(5)
+
+# User selects two digit classification iteration number
+iteration_number = arcpy.GetParameterAsText(6)
 
 #--------------------------------------------
 
@@ -204,7 +220,6 @@ arcpy.AddMessage(''''Populated Classified Tiff's attribute table field, Crop, wi
 
 # 5. Reclassify Classified Tiff based on attribute table field, Crop
 
-iteration_number = re.split('[_.]', os.path.basename(classified_raster))[4]
 region_and_time = os.path.basename(edited_field_borders_shapefile).rsplit(sep = '_', maxsplit = 1)[0]
 region_and_time_caps = region_and_time.upper()
 reclassified_raster_name = region_and_time + '_reclassified_' + iteration_number + '.img'
