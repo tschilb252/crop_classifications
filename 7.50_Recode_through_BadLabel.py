@@ -5,15 +5,15 @@
 # Name:             7.50_Recode_through_BadLabel.py
 # Author:           Kelly Meehan, USBR
 # Created:          20180618
-# Updated:          20200623 
+# Updated:          20200825 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
 
 # Notes:            This script is intended to be used for a Script Tool within ArcGIS Pro; it is not intended as a stand-alone script.
 
-# Description:      This tool generates an output similar to that of ERDAS IMAGINE's tool Save Zonal Statistics To Polygon Attributes tool;
-#                   it generates an Excel spreadsheet giving a normalized difference index of badness for each signature.
+# Description:      This tool generates an output similar to that of ERDAS IMAGINE's Save Zonal Statistics To Polygon Attributes tool;
+#                   it generates an Excel spreadsheet with a normalized difference index of badness for each signature.
 
 #----------------------------------------------------------------------------------------------
 
