@@ -26,6 +26,8 @@
 
 # import arcpy, os
 
+# import arcpy, os
+
 # class ToolValidator(object):
 #     """Class for validating a tool's parameter values and controlling
 #     the behavior of the tool's dialog."""
@@ -43,19 +45,19 @@
 #         validation is performed. This method is called whenever a parameter
 #         has been changed."""
         
-#         # Set a default value for Frequency Table
+#          # Set default directory for Documents Directory
 #         if self.params[0].value:
 #             if not self.params[1].altered:
-#                 workspace = os.path.dirname(self.params[0].value.value)
-#                 docs_folder = 'docs_' + str(os.path.basename(self.params[0].value.value))
-#                 docs_path = os.path.abspath(os.path.join(workspace, '..', docs_folder))
-#                 self.params[1].value = docs_path
-                
-#     def updateMessages(self):
+#                 covs_directory = os.path.dirname(self.params[0].value.value) 
+#                 shapefile_name = os.path.basename(self.params[0].value.value)
+#                 region_time_caps = shapefile_name.rsplit(sep = '_', maxsplit = 1)[0].upper()              
+#                 docs_directory = os.path.abspath(os.path.join(covs_directory, '..', 'docs_' + region_time_caps))   
+#                 self.params[1].value = docs_directory
 
+#     def updateMessages(self):
 #         """Modify the messages created by internal validation for each tool
 #         parameter. This method is called after internal validation."""
-           
+   
 #     def isLicensed(self):
 #         """Set whether tool is licensed to execute."""
 #         return True
