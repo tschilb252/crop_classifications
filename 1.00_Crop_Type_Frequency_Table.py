@@ -5,7 +5,7 @@
 # Name:             1.00_Crop_Type_Frequency_Table.py
 # Author:           Kelly Meehan, USBR
 # Created:          20190812
-# Updated:          20200529 
+# Updated:          20200827 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
@@ -20,7 +20,7 @@
 # Tool setup:       The script tool's properties can be set as follows: 
 #                      Parameters tab:    
 #                           Field Borders Feature Class    Feature Layer (Data Type) > Required (Type) > Input (Direction)
-#                           Output Directory               Workspace (Data Type) > Required (Type) > Input (Direction)
+#                           Documents Directory            Workspace (Data Type) > Required (Type) > Input (Direction)
 
 #                       Validation tab:
 
