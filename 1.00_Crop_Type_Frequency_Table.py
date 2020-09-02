@@ -26,8 +26,6 @@
 
 # import arcpy, os
 
-# import arcpy, os
-
 # class ToolValidator(object):
 #     """Class for validating a tool's parameter values and controlling
 #     the behavior of the tool's dialog."""
@@ -49,8 +47,7 @@
 #         if self.params[0].value:
 #             if not self.params[1].altered:
 #                 covs_directory = os.path.dirname(self.params[0].value.value) 
-#                 shapefile_name = os.path.basename(self.params[0].value.value)
-#                 region_time_caps = shapefile_name.rsplit(sep = '_', maxsplit = 1)[0].upper()              
+#                 region_time_caps = os.path.basename(self.params[0].value.value).upper()            
 #                 docs_directory = os.path.abspath(os.path.join(covs_directory, '..', 'docs_' + region_time_caps))   
 #                 self.params[1].value = docs_directory
 
