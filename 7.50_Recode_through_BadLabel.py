@@ -467,9 +467,9 @@ pandas_training_label_sig['Total_Area'] = pandas_training_label_sig[column_heade
 # Add Crop_label column, with value extracted from Signame
 
 crop_label_list = pandas_training_label_sig.index.str.split('-').str[2].tolist() 
-
 pandas_training_label_sig['Crop_label'] = pandas.to_numeric(crop_label_list)
 pandas_training_label_sig['Crop_label'] = pandas_training_label_sig['Crop_label'].div(100)
+pandas_training_label_sig['Crop_label'].fillna(-9999, inplace = True)
 pandas_training_label_sig['Crop_label'] = pandas_training_label_sig['Crop_label'].astype(int) 
 pandas_training_label_sig['Crop_label'] = pandas_training_label_sig['Crop_label'].astype(str) 
 
@@ -503,6 +503,16 @@ for i in columns_not_total:
 
 # Add summary row (i.e. total sum per column) 
 pandas_training_label_sig.loc['Total',:] = pandas_training_label_sig[columns_to_total].sum(axis = 0)
+
+# Print text (which can be copied and pasted into ERDAS IMAGINE Signature Editor criteria search) of recommended signatures to delete 
+
+badness_thresholds = [-0.5, -0.7, -1]
+
+for b in badness_thresholds:
+    list_signatures_remove = pandas_training_label_sig.index[pandas_training_label_sig['Badness_Index'] > b].tolist()
+    list_signatures_remove = ['$"Signature Name" == "{}"'.format(i) for i in list_signatures_remove]
+    string_signatures_remove = ' OR '.join(list_signatures_remove)
+    arcpy.AddMessage('The following text can be copied into ERDAS IMAGINE Signature Editor Criteria box; it corresponds to Signames that had a Badness Index of ' + str(b) + ' greater than : ' + string_signatures_remove)
 
 # 16.4 Create Excel file from pandas data frame 
 
