@@ -5,7 +5,7 @@
 # Name:             7.00_Create_Signame.py
 # Author:           JM, USBR; edited by Troy Wirth, USBR, and Kelly Meehan, USBR
 # Created:          20070410
-# Updated:          20200903 
+# Updated:          20201120 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
