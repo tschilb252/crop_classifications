@@ -129,7 +129,7 @@ arcpy.CheckOutExtension('Spatial')
 
 region_and_time = os.path.basename(edited_field_borders_shapefile).rsplit(sep = '_', maxsplit = 1)[0]
 
-segments_shapefile= os.path.join(covs_path, region_and_time + '_segments_scale_' + scale_parameter + '_.shp')
+segments_shapefile= os.path.join(covs_path, region_and_time + '_segments_scale_' + scale_parameter + '.shp')
 
 arcpy.Identity_analysis(in_features = eCognition_segments, identity_features = edited_field_borders_shapefile, out_feature_class = segments_shapefile, join_attributes = 'ALL', cluster_tolerance = '#', relationship = 'NO_RELATIONSHIPS')
 
