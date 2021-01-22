@@ -37,25 +37,22 @@ from datetime import datetime, timedelta
 # 0.1 Read in tool parameters
 
 # User sepecifies imagery directory
-imagery_directory = arcpy.GetParameterAsText(1)
-
-# User specifies output directory
-output_directory = arcpy.GetParameterAsText(2)
+imagery_directory = arcpy.GetParameterAsText(0)
 
 # User specifies feature class with agricultural fields for analysis
-ground_truth_feature_class = arcpy.GetParameterAsText(3)
+ground_truth_feature_class = arcpy.GetParameterAsText(1)
 
 # User specifies name of region as name without spaces
-region = arcpy.GetParameterAsText(4)
+region = arcpy.GetParameterAsText(2)
 
 # User specifies file geodatabase
-geodatabase = arcpy.GetParameterAsText(5)
+geodatabase = arcpy.GetParameterAsText(3)
 
 # User specifies threshold number of days fields should be below NDVI threshold in order to be labeled fallow
-days_required_fallow = arcpy.GetParameterAsText(6)
+days_required_fallow = arcpy.GetParameterAsText(4)
 
-# User sets NDVI threshold value below which fallow fields should fall within
-ndvi_fallow_threshold = arcpy.GetParameterAsText(7)
+# User sets NDVI threshold value (float between 0 and 0.2) below which fallow fields should fall within
+ndvi_fallow_threshold = arcpy.GetParameterAsText(5)
 
 #--------------------------------------------
 
@@ -228,7 +225,7 @@ dates_recent = [r for r in dates_as_integers if r >= date_month_ago]
 columns_ndvi_recent = ['ndvi_' + str(n) for n in dates_recent]
 
 # Label those fields with NDVI < 0.2 for the past 30 days as Fallow
-df_ndvi['Fallow_Status'] = numpy.where((df_ndvi[columns_ndvi_recent] < 0.2).all(axis = 1), 'Fallow', 'Not_Fallow')
+df_ndvi['Fallow_Status'] = numpy.where((df_ndvi[columns_ndvi_recent] < float(ndvi_fallow_threshold)).all(axis = 1), 'Fallow', 'Not_Fallow')
 numpy.where(())
 
 # Print number of fallow fields
@@ -241,7 +238,7 @@ ultima_delta = columns_delta[-1]
 penultima_delta = columns_delta[-2]
 
 for index, row in df_ndvi.iterrows():
-    if  df_ndvi.loc[index, ultima_ndvi] > 0.14 and (df_ndvi.loc[index, ultima_delta] > 0.02 or df_ndvi.loc[index, penultima_delta] > 0.02):
+    if df_ndvi.loc[index, ultima_ndvi] > 0.14 and (df_ndvi.loc[index, ultima_delta] > 0.02 or df_ndvi.loc[index, penultima_delta] > 0.02):
         df_ndvi.loc[index, 'Fallow_Status'] = 'Not_Fallow'
 
 # Print number of fallow fields after culling
