@@ -4,7 +4,7 @@
 # Name:             Identify_Fallow_Fields.py
 # Author:           Kelly Meehan, USBR
 # Created:          20200501
-# Updated:          20210120 
+# Updated:          20210122 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
@@ -51,8 +51,11 @@ geodatabase = arcpy.GetParameterAsText(3)
 # User specifies threshold number of days fields should be below NDVI threshold in order to be labeled fallow
 days_required_fallow = arcpy.GetParameterAsText(4)
 
-# User sets NDVI threshold value (float between 0 and 0.2) below which fallow fields should fall within
+# User sets NDVI threshold value (float between 0 and 1.0) below which fallow fields should fall 
 ndvi_fallow_threshold = arcpy.GetParameterAsText(5)
+
+# User sets delta NDVI threshold value (float between -1 and 0) below which harvested fields should fall
+harvest_value_threshold = arcpy.GetParameterAsText(6)
 
 #--------------------------------------------
 
@@ -185,7 +188,7 @@ df_delta_ndvi.dropna(axis = 1, how = 'all', inplace = True)
 
 # Function to identify most recent harvest date   
 def get_recent_harvest(v):
-    s = pandas.Series(v < -0.15)
+    s = pandas.Series(v < float(harvest_value_threshold))
     array = s.where(s == True).last_valid_index()
     return numpy.nan if array is None else array[6:]
 
