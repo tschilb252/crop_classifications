@@ -57,6 +57,12 @@ ndvi_fallow_threshold = arcpy.GetParameterAsText(5)
 # User sets delta NDVI threshold value (float between -1 and 0) below which harvested fields should fall
 harvest_value_threshold = arcpy.GetParameterAsText(6)
 
+# User selects Red Band
+red_band = arcpy.GetParameterAsText(7)
+
+# User selects NIR Band
+nir_band = arcpy.GetParameterAsText(8)
+
 #--------------------------------------------
 
 # 0.2 Set environment settings
@@ -86,7 +92,7 @@ file_list = os.listdir()
 imgery_list = []
 
 # Create list of composite rasters
-imgery_list = glob.glob('*_B2-4_8.img')
+imgery_list = glob.glob('*.img')
 
 # Function to calculate zonal mean NDVI per agricultural field
 
@@ -116,8 +122,8 @@ def calculate_ndvi():
         outExtractByMask.save(output)
        
         # Read in NIR and Red bands
-        nir_raster = arcpy.Raster(output + '\\Band_4')
-        red_raster = arcpy.Raster(output + '\\Band_3')
+        nir_raster = arcpy.Raster(output + '\\Band_' + str(nir_band))
+        red_raster = arcpy.Raster(output + '\\Band_' + str(red_band))
         
         # Generate two new rasters, the first as the top of the ndvi calculation, the second the bottom
         # NOTE: arcpy.sa.Raster function required to read in layer as a raster object and Float function is used to avoid integer outputs
