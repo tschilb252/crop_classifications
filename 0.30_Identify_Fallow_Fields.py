@@ -224,8 +224,11 @@ date_month_ago = int(month_ago.strftime("%Y%m%d"))
 # Extract  dates within 28 days of runtime
 dates_recent = [r for r in dates_as_integers if r >= date_month_ago]
 
-# Identify columns with NDVI values within 28 days of report run
+# Identify columns with NDVI dates within fallow date threshold
 columns_ndvi_recent = ['ndvi_' + str(n) for n in dates_recent]
+
+# Identify columns with delta NDVI dates within fallow date threshold
+columns_delta_recent = ['delta_' + str(c) for c in dates_recent]
 
 # Label those fields with NDVI < 0.2 for the past 30 days as Fallow
 df_ndvi['Fallow_Status'] = numpy.where((df_ndvi[columns_ndvi_recent] < float(ndvi_fallow_threshold)).all(axis = 1), 'Fallow', 'Not_Fallow')
@@ -234,18 +237,18 @@ numpy.where(())
 # Print number of fallow fields
 len(df_ndvi[df_ndvi.Fallow_Status == 'Fallow'])
 
-# Override fallow label for exceptions including fields whose most recent NDVI > 0.14 or one of the two most recent delta NDVIs are > 0.02
+# Create column with sum values of delta NDVI values within required fallow time range
+df_ndvi['recent_delta_sum'] = df_ndvi[columns_delta_recent].sum(axis=1)
 
-ultima_ndvi = columns_ndvi[-1]
-ultima_delta = columns_delta[-1]
-penultima_delta = columns_delta[-2]
-
+# Override fallow label for those fields whose sum delta NDVI over the required fallow time range was positive
 for index, row in df_ndvi.iterrows():
-    if df_ndvi.loc[index, ultima_ndvi] > 0.14 and (df_ndvi.loc[index, ultima_delta] > 0.02 or df_ndvi.loc[index, penultima_delta] > 0.02):
+    if df_ndvi.loc[index, 'recent_delta_sum'] > 0:
         df_ndvi.loc[index, 'Fallow_Status'] = 'Not_Fallow'
 
 # Print number of fallow fields after culling
 print(len(df_ndvi[df_ndvi.Fallow_Status == 'Fallow']))
+
+
         
 #--------------------------------------------------------------------------
 
@@ -291,3 +294,5 @@ arcpy.da.ExtendTable(in_table = ground_truth_feature_class, table_match_field = 
 # Replace extent table with numpy to table and then join
 # Add test ensuring that imagery covers back far enough to cover fallow threshold number of days
 # Add test to ensure that all features in feature class are covered by each image
+# Add parameter for date run and set default to now
+# Add bands as parameter to make tool more dynamic
