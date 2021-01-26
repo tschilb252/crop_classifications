@@ -166,9 +166,10 @@ calculate_ndvi()
 
 # 2. Calculate delta NDVI for time periods (excluding first date)
 
-# Create list of attribute table fields to include in numpy array (ndvi* and FIELD_ID)
+# Create list of attribute table fields to include in numpy array (ndvi, FIELD_ID, Crop_Type)
 include_fields = [field.name for field in arcpy.ListFields(dataset = ground_truth_feature_class, wild_card = 'ndvi*')]
 include_fields.insert(0, 'FIELD_ID')
+include_fields.append('Crop_Type')
 
 # Create numpy array from Training Label Signame Geodatabase Table
 array_ndvi = arcpy.da.TableToNumPyArray(in_table = ground_truth_feature_class, field_names = include_fields)
@@ -180,7 +181,8 @@ df_ndvi = pandas.DataFrame(data = array_ndvi)
 df_ndvi.set_index('FIELD_ID', inplace = True)
 
 # Create data frame calculating delta NDVI 
-df_delta_ndvi = df_ndvi.diff(axis = 1)
+df_ndvi_no_crop = df_ndvi.loc[:,df_ndvi.columns != 'Crop_Type']
+df_delta_ndvi = df_ndvi_no_crop.diff(axis = 1)
 
 # Change column names to indicate delta NDVI
 df_delta_ndvi.columns = [col.replace('ndvi', 'delta') for col in df_delta_ndvi.columns]
@@ -192,11 +194,11 @@ df_delta_ndvi.dropna(axis = 1, how = 'all', inplace = True)
 
 # 3. Identify most recent harvest date
 
-# Function to identify most recent harvest date   
+# Function to identify most recent harvest date, using -9999 as NA   
 def get_recent_harvest(v):
     s = pandas.Series(v < float(harvest_value_threshold))
     array = s.where(s == True).last_valid_index()
-    return numpy.nan if array is None else array[6:]
+    return '-9999' if array is None else array[6:]
 
 df_delta_ndvi['Harvest_Date'] = df_delta_ndvi.apply(lambda x: get_recent_harvest(x), axis = 1)
 
@@ -227,11 +229,11 @@ dates = [d.replace('ndvi_', '') for d in columns_ndvi]
 dates_as_integers = [int(d) for d in dates]
 
 # Assign variable to integer value of 28 days prior to runtime as YYYYYMMFF
-month_ago = datetime.now() - timedelta(int(days_required_fallow))
-date_month_ago = int(month_ago.strftime("%Y%m%d"))
+day_required_fallow = datetime.now() - timedelta(int(days_required_fallow))
+date_required_fallow = int(day_required_fallow.strftime("%Y%m%d"))
 
 # Extract  dates within 28 days of runtime
-dates_recent = [r for r in dates_as_integers if r >= date_month_ago]
+dates_recent = [r for r in dates_as_integers if r >= date_required_fallow]
 
 # Identify columns with NDVI dates within fallow date threshold
 columns_ndvi_recent = ['ndvi_' + str(n) for n in dates_recent]
@@ -243,20 +245,17 @@ columns_delta_recent = ['delta_' + str(c) for c in dates_recent]
 df_ndvi['Fallow_Status'] = numpy.where((df_ndvi[columns_ndvi_recent] < float(ndvi_fallow_threshold)).all(axis = 1), 'Fallow', 'Not_Fallow')
 numpy.where(())
 
-# Print number of fallow fields
-len(df_ndvi[df_ndvi.Fallow_Status == 'Fallow'])
-
 # Create column with sum values of delta NDVI values within required fallow time range
 df_ndvi['recent_delta_sum'] = df_ndvi[columns_delta_recent].sum(axis=1)
 
-# Override fallow label for those fields whose sum delta NDVI over the required fallow time range was >= 0.1 and the most recent NDVI was >= 0.14
+# Override fallow label for those fields: 1) whose sum delta NDVI over the required fallow time range was >= 0.01 and the most recent NDVI was >= 0.10 or 2) had a recent harvest (within the fallowing threshold time range) which was not previously captured (i.e. crop type is fallow)
+
 for index, row in df_ndvi.iterrows():
     if df_ndvi.loc[index, 'recent_delta_sum'] >= 0.01 and df_ndvi.loc[index, ultima_ndvi] >= 0.10:
         df_ndvi.loc[index, 'Fallow_Status'] = 'Not_Fallow'
+    if df_ndvi.loc[index, 'Harvest_Date'] != '-9999' and int(df_ndvi.loc[index, 'Harvest_Date']) <= date_required_fallow and df_ndvi.loc[index, 'Crop_Type'] == 1403:
+        df_ndvi.loc[index, 'Fallow_Status'] = 'Not_Fallow'   
 
-# Print number of fallow fields after culling
-print(len(df_ndvi[df_ndvi.Fallow_Status == 'Fallow']))
-    
 #--------------------------------------------------------------------------
 
 # 5. Join pandas dataframe to Ground Truth feature class
