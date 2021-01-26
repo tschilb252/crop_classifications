@@ -89,10 +89,10 @@ arcpy.CheckOutExtension('Spatial')
 file_list = os.listdir()
 
 # Assign variable to empty list (to which .img files to be iterated through will be added)
-imgery_list = []
+imagery_list = []
 
 # Create list of composite rasters
-imgery_list = glob.glob('*.img')
+imagery_list = glob.glob('*.img')
 
 # Function to calculate zonal mean NDVI per agricultural field
 
@@ -101,7 +101,7 @@ def calculate_ndvi():
     # Create empty lists to which dates will later be added
     date_list = []
     
-    for i in imgery_list:
+    for i in imagery_list:
         
         # Extract date from image file name
         image_name = os.path.basename(i) 
@@ -119,8 +119,8 @@ def calculate_ndvi():
             arcpy.Delete_management(in_data = output)
         
         # Save extracted image to memory        
-        outExtractByMask.save(output)     
-
+        outExtractByMask.save(output)
+       
         # Read in NIR and Red bands
         nir_raster = arcpy.Raster(output + '\\Band_' + str(nir_band))
         red_raster = arcpy.Raster(output + '\\Band_' + str(red_band))
@@ -161,7 +161,6 @@ def calculate_ndvi():
             arcpy.DeleteField_management(in_table = ground_truth_feature_class, drop_field = 'MEAN')
     
 calculate_ndvi()
-
 
 #--------------------------------------------------------------------------
 
@@ -257,9 +256,7 @@ for index, row in df_ndvi.iterrows():
 
 # Print number of fallow fields after culling
 print(len(df_ndvi[df_ndvi.Fallow_Status == 'Fallow']))
-
-
-        
+    
 #--------------------------------------------------------------------------
 
 # 5. Join pandas dataframe to Ground Truth feature class
@@ -306,3 +303,5 @@ arcpy.da.ExtendTable(in_table = ground_truth_feature_class, table_match_field = 
 # Add test to ensure that all features in feature class are covered by each image
 # Add parameter for date run and set default to now
 # Add bands as parameter to make tool more dynamic
+# Change band inputs to drop down list of range of length of number of bands in image
+# Auto detect associated bands based on metadata
