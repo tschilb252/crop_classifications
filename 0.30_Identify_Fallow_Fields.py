@@ -119,8 +119,8 @@ def calculate_ndvi():
             arcpy.Delete_management(in_data = output)
         
         # Save extracted image to memory        
-        outExtractByMask.save(output)
-       
+        outExtractByMask.save(output)     
+
         # Read in NIR and Red bands
         nir_raster = arcpy.Raster(output + '\\Band_' + str(nir_band))
         red_raster = arcpy.Raster(output + '\\Band_' + str(red_band))
@@ -161,6 +161,7 @@ def calculate_ndvi():
             arcpy.DeleteField_management(in_table = ground_truth_feature_class, drop_field = 'MEAN')
     
 calculate_ndvi()
+
 
 #--------------------------------------------------------------------------
 
@@ -216,6 +217,9 @@ columns_all = list(df_ndvi.columns.values)
 # Create list of delta NDVI column names
 columns_ndvi = fnmatch.filter(columns_all, 'ndvi*')
 
+# Set variable for most recent NDVI column name
+ultima_ndvi = columns_ndvi[-1]
+
 # Create list of delta NDVI column names
 columns_delta = fnmatch.filter(columns_all, 'delta_*')
 
@@ -246,9 +250,9 @@ len(df_ndvi[df_ndvi.Fallow_Status == 'Fallow'])
 # Create column with sum values of delta NDVI values within required fallow time range
 df_ndvi['recent_delta_sum'] = df_ndvi[columns_delta_recent].sum(axis=1)
 
-# Override fallow label for those fields whose sum delta NDVI over the required fallow time range was positive
+# Override fallow label for those fields whose sum delta NDVI over the required fallow time range was >= 0.1 and the most recent NDVI was >= 0.14
 for index, row in df_ndvi.iterrows():
-    if df_ndvi.loc[index, 'recent_delta_sum'] > 0:
+    if df_ndvi.loc[index, 'recent_delta_sum'] >= 0.01 and df_ndvi.loc[index, ultima_ndvi] >= 0.10:
         df_ndvi.loc[index, 'Fallow_Status'] = 'Not_Fallow'
 
 # Print number of fallow fields after culling
