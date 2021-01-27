@@ -4,7 +4,7 @@
 # Name:             Identify_Fallow_Fields.py
 # Author:           Kelly Meehan, USBR
 # Created:          20200501
-# Updated:          20210126 
+# Updated:          20210127 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
@@ -167,7 +167,6 @@ calculate_ndvi()
 # 2. Calculate delta NDVI for time periods (excluding first date)
 
 # Create list of attribute table fields to include in numpy array (ndvi, FIELD_ID, Crop_Type)
-
 include_fields = [field.name for field in arcpy.ListFields(dataset = ground_truth_feature_class, wild_card = 'ndvi*')]
 
 include_fields.insert(0, 'FIELD_ID')
@@ -214,9 +213,6 @@ df_ndvi = df_ndvi.join(df_delta_ndvi, how = 'outer')
 
 # 4. Identify fallow fields
 
-# Assign variable to integer value of today's date as YYYYMMDD
-date_today = int(datetime.today().strftime('%Y%m%d'))
-
 # Create list of all dataframe column names
 columns_all = list(df_ndvi.columns.values)
 
@@ -233,8 +229,8 @@ columns_delta = fnmatch.filter(columns_all, 'delta_*')
 dates = [d.replace('ndvi_', '') for d in columns_ndvi]
 dates_as_integers = [int(d) for d in dates]
 
-# Find beginning of fallow date threshold (date prior to today by the number of days fields evaluated for fallow status)
-day_required_fallow = datetime.now() - timedelta(int(days_required_fallow))
+# Find beginning of fallow date threshold (date prior to last image by the number of days fields evaluated for fallow status)
+day_required_fallow = datetime.strptime(str(dates_as_integers[-1]), "%Y%m%d") - timedelta(int(days_required_fallow))
 
 # Assign variable to integer value (as YYYYYMMFF) of fallow date threshold beginning
 date_required_fallow = int(day_required_fallow.strftime("%Y%m%d"))
@@ -252,9 +248,7 @@ columns_delta_recent = ['delta_' + str(c) for c in dates_recent]
 
 df_ndvi['Fallow_Status'] = numpy.where((df_ndvi[columns_ndvi_recent] < float(ndvi_fallow_threshold)).all(axis = 1), 'Fallow', 'Not_Fallow')
 
-numpy.where(())
-
-# Create column with sum values of delta NDVI values within required fallow time range
+# Create column with sum values of delta NDVI values within required fallow analysis time range
 df_ndvi['recent_delta_sum'] = df_ndvi[columns_delta_recent].sum(axis=1)
 
 # Override fallow label for those fields: 1) whose sum delta NDVI over the required fallow time range was >= 0.01 and the most recent NDVI was >= 0.10 or 2) that had a recent harvest (within the fallow analysis timeframe) which was not previously captured (i.e. crop type is fallow)
@@ -290,7 +284,7 @@ array_names = df_join.dtypes.index.tolist()
 output_array.dtype.names = tuple(array_names)
 arcpy.da.ExtendTable(in_table = ground_truth_feature_class, table_match_field = 'FIELD_ID', in_array = output_array, array_match_field = 'FIELD_ID')
 
-#_______________________________________________________________________________
+#----------------------------------------------------------------------------------------------
 
 # TTDL
 
