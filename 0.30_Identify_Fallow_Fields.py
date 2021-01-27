@@ -4,14 +4,14 @@
 # Name:             Identify_Fallow_Fields.py
 # Author:           Kelly Meehan, USBR
 # Created:          20200501
-# Updated:          20210122 
+# Updated:          20210126 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
 
 # Notes:            This script is intended to be used for a Script Tool within ArcGIS Pro; it is not intended as a stand-alone script.
 
-# Description:      This tool calculates the following for each agricultural field: NDVI for each image, delta NDVI between each image, most recent harvest date, and fallow status. There is an assumption that Sentinel- 2 imagery (composited bands 2, 3, 4, 8) with the following nomenclature is used: *_*_YYYYMMDD_*B2-4_8.img'.
+# Description:      This tool calculates the following for each agricultural field: 1) NDVI for each image, 2) delta NDVI between each image, 3) most recent harvest date, and 4) fallow status. There is an assumption imagery is a composited ERDAS IMAGINE raster.
 
 ################################################################################################
 ################################################################################################
@@ -39,7 +39,7 @@ from datetime import datetime, timedelta
 # User sepecifies imagery directory
 imagery_directory = arcpy.GetParameterAsText(0)
 
-# User specifies feature class with agricultural fields for analysis
+# User specifies feature class of agricultural fields containing the following fields: 1) FIELD_ID as unique identifier and 2) Crop_Type of last season's ground truth data
 ground_truth_feature_class = arcpy.GetParameterAsText(1)
 
 # User specifies name of region as name without spaces
@@ -167,8 +167,11 @@ calculate_ndvi()
 # 2. Calculate delta NDVI for time periods (excluding first date)
 
 # Create list of attribute table fields to include in numpy array (ndvi, FIELD_ID, Crop_Type)
+
 include_fields = [field.name for field in arcpy.ListFields(dataset = ground_truth_feature_class, wild_card = 'ndvi*')]
+
 include_fields.insert(0, 'FIELD_ID')
+
 include_fields.append('Crop_Type')
 
 # Create numpy array from Training Label Signame Geodatabase Table
@@ -180,8 +183,10 @@ df_ndvi = pandas.DataFrame(data = array_ndvi)
 # Set FIELD_ID column as index
 df_ndvi.set_index('FIELD_ID', inplace = True)
 
-# Create data frame calculating delta NDVI 
+# Create copy of NDVI dataframe without Crop_Type
 df_ndvi_no_crop = df_ndvi.loc[:,df_ndvi.columns != 'Crop_Type']
+
+# Calculate delta NDVI 
 df_delta_ndvi = df_ndvi_no_crop.diff(axis = 1)
 
 # Change column names to indicate delta NDVI
@@ -194,7 +199,7 @@ df_delta_ndvi.dropna(axis = 1, how = 'all', inplace = True)
 
 # 3. Identify most recent harvest date
 
-# Function to identify most recent harvest date, using -9999 as NA   
+# Function to identify most recent harvest date, using -9999 in lieu NA   
 def get_recent_harvest(v):
     s = pandas.Series(v < float(harvest_value_threshold))
     array = s.where(s == True).last_valid_index()
@@ -228,27 +233,31 @@ columns_delta = fnmatch.filter(columns_all, 'delta_*')
 dates = [d.replace('ndvi_', '') for d in columns_ndvi]
 dates_as_integers = [int(d) for d in dates]
 
-# Assign variable to integer value of 28 days prior to runtime as YYYYYMMFF
+# Find beginning of fallow date threshold (date prior to today by the number of days fields evaluated for fallow status)
 day_required_fallow = datetime.now() - timedelta(int(days_required_fallow))
+
+# Assign variable to integer value (as YYYYYMMFF) of fallow date threshold beginning
 date_required_fallow = int(day_required_fallow.strftime("%Y%m%d"))
 
-# Extract  dates within 28 days of runtime
+# Extract dates within fallow analysis timeframe
 dates_recent = [r for r in dates_as_integers if r >= date_required_fallow]
 
-# Identify columns with NDVI dates within fallow date threshold
+# Identify columns with NDVI dates within fallow analysis timeframe
 columns_ndvi_recent = ['ndvi_' + str(n) for n in dates_recent]
 
-# Identify columns with delta NDVI dates within fallow date threshold
+# Identify columns with delta NDVI dates within fallow analysis timeframe
 columns_delta_recent = ['delta_' + str(c) for c in dates_recent]
 
-# Label those fields with NDVI < 0.2 for the past 30 days as Fallow
+# Label fields as fallow if NDVI was less than user defined NDVI fallow threshold for the entirety of the fallow analysis timeframe
+
 df_ndvi['Fallow_Status'] = numpy.where((df_ndvi[columns_ndvi_recent] < float(ndvi_fallow_threshold)).all(axis = 1), 'Fallow', 'Not_Fallow')
+
 numpy.where(())
 
 # Create column with sum values of delta NDVI values within required fallow time range
 df_ndvi['recent_delta_sum'] = df_ndvi[columns_delta_recent].sum(axis=1)
 
-# Override fallow label for those fields: 1) whose sum delta NDVI over the required fallow time range was >= 0.01 and the most recent NDVI was >= 0.10 or 2) had a recent harvest (within the fallowing threshold time range) which was not previously captured (i.e. crop type is fallow)
+# Override fallow label for those fields: 1) whose sum delta NDVI over the required fallow time range was >= 0.01 and the most recent NDVI was >= 0.10 or 2) that had a recent harvest (within the fallow analysis timeframe) which was not previously captured (i.e. crop type is fallow)
 
 for index, row in df_ndvi.iterrows():
     if df_ndvi.loc[index, 'recent_delta_sum'] >= 0.01 and df_ndvi.loc[index, ultima_ndvi] >= 0.10:
@@ -256,12 +265,17 @@ for index, row in df_ndvi.iterrows():
     if df_ndvi.loc[index, 'Harvest_Date'] != '-9999' and int(df_ndvi.loc[index, 'Harvest_Date']) <= date_required_fallow and df_ndvi.loc[index, 'Crop_Type'] == 1403:
         df_ndvi.loc[index, 'Fallow_Status'] = 'Not_Fallow'   
 
+# Delete column Crop_Type to avoid issues with upcoming merge 
+del df_ndvi['Crop_Type']
+
 #--------------------------------------------------------------------------
 
 # 5. Join pandas dataframe to Ground Truth feature class
 
-# Create list of column to join
+# Create list of all pandas dataframe columns
 columns_all = list(df_ndvi.columns.values)
+
+# Create list of column to join (i.e. exclude NDVI columns as already pre-existing in feature class)
 columns_non_ndvi = [c for c in columns_all if c not in columns_ndvi]
 
 # Create copy of NDVI dataframe, keeping only those to join
@@ -304,3 +318,6 @@ arcpy.da.ExtendTable(in_table = ground_truth_feature_class, table_match_field = 
 # Add bands as parameter to make tool more dynamic
 # Change band inputs to drop down list of range of length of number of bands in image
 # Auto detect associated bands based on metadata
+# Avoid redundancy of adding NDVI columns to feature class only to delete them before join
+# Have current date be parameter so that script can be run retroactively
+# Catch exception if user re-runs tool but did not delete joined columns from ground truth feature class (e.g. ndvi, delta, harvest, and fallow_status columns)
