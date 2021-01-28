@@ -42,26 +42,23 @@ imagery_directory = arcpy.GetParameterAsText(0)
 # User specifies feature class of agricultural fields containing the following fields: 1) FIELD_ID as unique identifier and 2) Crop_Type of last season's ground truth data
 ground_truth_feature_class = arcpy.GetParameterAsText(1)
 
-# User specifies name of region as name without spaces
-region = arcpy.GetParameterAsText(2)
-
 # User specifies file geodatabase
-geodatabase = arcpy.GetParameterAsText(3)
+geodatabase = arcpy.GetParameterAsText(2)
 
 # User specifies threshold number of days fields should be below NDVI threshold in order to be labeled fallow
-days_required_fallow = arcpy.GetParameterAsText(4)
+days_required_fallow = arcpy.GetParameterAsText(3)
 
 # User sets NDVI threshold value (float between 0 and 1.0) below which fallow fields should fall 
-ndvi_fallow_threshold = arcpy.GetParameterAsText(5)
+ndvi_fallow_threshold = arcpy.GetParameterAsText(4)
 
 # User sets delta NDVI threshold value (float between -1 and 0) below which harvested fields should fall
-harvest_value_threshold = arcpy.GetParameterAsText(6)
+harvest_value_threshold = arcpy.GetParameterAsText(5)
 
 # User selects Red Band
-red_band = arcpy.GetParameterAsText(7)
+red_band = arcpy.GetParameterAsText(6)
 
 # User selects NIR Band
-nir_band = arcpy.GetParameterAsText(8)
+nir_band = arcpy.GetParameterAsText(7)
 
 #--------------------------------------------
 
@@ -137,7 +134,7 @@ def calculate_ndvi():
         date_list.append(image_date)
         
         # Assign variable to zonal statistics table
-        majority_table = r'in_memory/' + region + '_ndvi_' + image_date
+        majority_table = r'in_memory/ndvi_' + image_date
     
         # Check for pre-existing table and delete
         if arcpy.Exists(majority_table):
@@ -188,11 +185,11 @@ df_ndvi_no_crop = df_ndvi.loc[:,df_ndvi.columns != 'Crop_Type']
 # Calculate delta NDVI 
 df_delta_ndvi = df_ndvi_no_crop.diff(axis = 1)
 
-# Change column names to indicate delta NDVI
-df_delta_ndvi.columns = [col.replace('ndvi', 'delta') for col in df_delta_ndvi.columns]
-
 # Delete first delta NDVI column with no data
 df_delta_ndvi.dropna(axis = 1, how = 'all', inplace = True)
+
+# Change column names to indicate delta NDVI
+df_delta_ndvi.columns = [col.replace('ndvi', 'delta') for col in df_delta_ndvi.columns]
 
 #--------------------------------------------------------------------------
 
@@ -288,10 +285,6 @@ arcpy.da.ExtendTable(in_table = ground_truth_feature_class, table_match_field = 
 
 # TTDL
 
-# Inner buffer fields and then calculate mean NDVI
-# Use MEDIAN in zonal status(must first convert floating point to integer)
-# Add boolean check mark to indicate whether to run append section or not 
-# Fix formatting and numbering
 # Add in region string name parameter
 # Convert if checks for existing files of fields and use try except instead
 # Note assumption of Sentinel imagery using nomenclature from tool 0.2*
@@ -315,3 +308,4 @@ arcpy.da.ExtendTable(in_table = ground_truth_feature_class, table_match_field = 
 # Avoid redundancy of adding NDVI columns to feature class only to delete them before join
 # Have current date be parameter so that script can be run retroactively
 # Catch exception if user re-runs tool but did not delete joined columns from ground truth feature class (e.g. ndvi, delta, harvest, and fallow_status columns)
+# Have delta NDVI values be daily rates for better comparison between disparate image time intervals
