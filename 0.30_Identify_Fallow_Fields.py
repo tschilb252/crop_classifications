@@ -11,7 +11,7 @@
 
 # Notes:            This script is intended to be used for a Script Tool within ArcGIS Pro; it is not intended as a stand-alone script.
 
-# Description:      This tool calculates the following for each agricultural field: 1) NDVI for each image, 2) delta NDVI between each image, 3) most recent harvest date, and 4) fallow status. There is an assumption imagery is a composited ERDAS IMAGINE raster.
+# Description:      This tool calculates the following for each agricultural field: 1) NDVI for each image, 2) delta NDVI between each image, 3) most recent harvest date, and 4) fallow status. There is an assumption imagery is a composited ERDAS IMAGINE raster using the following nomenclature: S2_MSIL1C_YYYYMMDD_Rxxx_Txxxxx_Bx_.img 
 
 ################################################################################################
 ################################################################################################
@@ -25,6 +25,99 @@
 # 5. Join pandas dataframe to Ground Truth Feature Class
 
 #----------------------------------------------------------------------------------------------
+
+# Tool setup:       The script tool's properties can be set as follows: 
+#
+#                      Parameters tab:    
+#                           Imagery Directory               Workspace (Data Type) > Required (Type) > Input (Direction)  
+#                           Ground Truth Feature Class     Feature Class (Data Type) > Required (Type) > Input (Direction)
+#                           Geodatabase                     Workspace (Data Type) > Required (Type) > Input (Direction)
+#                           Days Required Fallow                String (Data Type) > Required (Type) > Input (Direction)
+#                           Fallow NDVI Threshold       String (Data Type) > Required (Type) > Input (Direction)
+#                           Harvest NDVI Threshold                String (Data Type) > Required (Type) > Input (Direction)
+#                           Red Band                String (Data Type) > Required (Type) > Input (Direction)
+#                           NIR Band                String (Data Type) > Required (Type) > Input (Direction)
+#
+#                       Validation tab:
+#
+
+# import arcpy
+
+# class ToolValidator(object):
+#     """Class for validating a tool's parameter values and controlling
+#     the behavior of the tool's dialog."""
+
+#     def __init__(self):
+#         """Setup arcpy and the list of tool parameters.""" 
+#         self.params = arcpy.GetParameterInfo()
+
+#     def initializeParameters(self):
+#         """Refine the properties of a tool's parameters. This method is 
+#         called when the tool is opened."""
+ 
+#         if not self.params[3].altered:
+#             self.params[3].value = '28'
+#         if not self.params[4].altered:
+#             self.params[4].value = '0.20'
+#         if not self.params[5].altered:
+#             self.params[5].value = '-0.13'
+#         if not self.params[6].altered:
+#             self.params[6].value = '3'
+#         if not self.params[7].altered:
+#             self.params[7].value = '4'
+                                    
+#     def updateParameters(self):
+#         """Modify the values and properties of parameters before internal
+#         validation is performed. This method is called whenever a parameter
+#         has been changed."""
+                    
+#     def updateMessages(self):
+#         """Modify the messages created by internal validation for each tool
+#         parameter. This method is called after internal validation."""
+
+#         if self.params[3].value:
+#             days_required_fallow_value = self.params[3].value
+#             try:
+#                 int(days_required_fallow_value)
+#             except ValueError:
+#                 self.params[3].setErrorMessage('{0} is not an appropriate value to pass to Days Required Fallow parameter. Please provide an integer value.'.format(days_required_fallow_value))
+        
+#         if self.params[4].value:
+#             fallow_ndvi_threshold_value = self.params[4].value 
+#             try:
+#                 float(fallow_ndvi_threshold_value)
+#             except ValueError:
+#                 self.params[4].setErrorMessage('{0} is not an appropriate value to pass to NDVI Fallow Threshold parameter. Please provide a decimal value between 0 and 1.'.format(fallow_ndvi_threshold_value))                                              
+#             if float(fallow_ndvi_threshold_value) < 0 or float(fallow_ndvi_threshold_value) > 1:
+#                 self.params[4].setErrorMessage('{0} is not an appropriate value to pass to NDVI Fallow Threshold parameter. Please provide a decimal value between 0 and 1.'.format(fallow_ndvi_threshold_value)) 
+            
+#         if self.params[5].value:
+#             harvest_ndvi_threshold_value = self.params[5].value
+#             try:
+#                 float(harvest_ndvi_threshold_value)
+#             except ValueError:
+#                 self.params[5].setErrorMessage('{0} is not an appropriate value to pass to NDVI Fallow Threshold parameter. Please provide a decimal value between -1 and 0.'.format(harvest_ndvi_threshold_value))
+            
+#             if float(harvest_ndvi_threshold_value) < -1 or float(harvest_ndvi_threshold_value) > 0:
+#                 self.params[5].setErrorMessage('{0} is not an appropriate value to pass to Harvest NDVI Threshold parameter. Please provide a decimal value between -1 and 0.'.format(harvest_ndvi_threshold_value))
+                
+#         if self.params[6].value:
+#             red_band_value = self.params[6].value
+#             try:
+#                 int(red_band_value)
+#             except ValueError:
+#                 self.params[6].setErrorMessage('{0} is not an appropriate value to pass to Red Band parameter. Please provide an integer value.'.format(red_band_value))
+                
+#         if self.params[7].value:
+#             nir_band_value = self.params[7].value
+#             try:
+#                 int(nir_band_value)
+#             except ValueError:
+#                 self.params[7].setErrorMessage('{0} is not an appropriate value to pass to NIR Band parameter. Please provide an integer value.'.format(nir_band_value))
+                
+#     def isLicensed(self):
+#         """Set whether tool is licensed to execute."""
+#         return True
 
 # 0. Set up 
 
@@ -49,10 +142,10 @@ geodatabase = arcpy.GetParameterAsText(2)
 days_required_fallow = arcpy.GetParameterAsText(3)
 
 # User sets NDVI threshold value (float between 0 and 1.0) below which fallow fields should fall 
-ndvi_fallow_threshold = arcpy.GetParameterAsText(4)
+fallow_ndvi_threshold = arcpy.GetParameterAsText(4)
 
 # User sets delta NDVI threshold value (float between -1 and 0) below which harvested fields should fall
-harvest_value_threshold = arcpy.GetParameterAsText(5)
+harvest_ndvi_threshold = arcpy.GetParameterAsText(5)
 
 # User selects Red Band
 red_band = arcpy.GetParameterAsText(6)
@@ -197,7 +290,7 @@ df_delta_ndvi.columns = [col.replace('ndvi', 'delta') for col in df_delta_ndvi.c
 
 # Function to identify most recent harvest date, using -9999 in lieu NA   
 def get_recent_harvest(v):
-    s = pandas.Series(v < float(harvest_value_threshold))
+    s = pandas.Series(v < float(harvest_ndvi_threshold))
     array = s.where(s == True).last_valid_index()
     return '-9999' if array is None else array[6:]
 
@@ -243,7 +336,7 @@ columns_delta_recent = ['delta_' + str(c) for c in dates_recent]
 
 # Label fields as fallow if NDVI was less than user defined NDVI fallow threshold for the entirety of the fallow analysis timeframe
 
-df_ndvi['Fallow_Status'] = numpy.where((df_ndvi[columns_ndvi_recent] < float(ndvi_fallow_threshold)).all(axis = 1), 'Fallow', 'Not_Fallow')
+df_ndvi['Fallow_Status'] = numpy.where((df_ndvi[columns_ndvi_recent] < float(fallow_ndvi_threshold)).all(axis = 1), 'Fallow', 'Not_Fallow')
 
 # Create column with sum values of delta NDVI values within required fallow analysis time range
 df_ndvi['recent_delta_sum'] = df_ndvi[columns_delta_recent].sum(axis=1)
@@ -285,27 +378,19 @@ arcpy.da.ExtendTable(in_table = ground_truth_feature_class, table_match_field = 
 
 # TTDL
 
-# Add in region string name parameter
 # Convert if checks for existing files of fields and use try except instead
-# Note assumption of Sentinel imagery using nomenclature from tool 0.2*
-# Add parameters to make suggested remove flexible: 1) number of days prior to harvest date, and 2) 
-# Allow user to change NDVI value threshold for fallow (defalut to 0.2)
 # Easier way of evaluating which NDVI columns are recent?
 # Easier to make new data frame of recent NDVI or to only consider certain ones?
-# How to deal with NA values in Harvest date in order to do comparison
 # Use numpy to raster and do ndvi calculations with numpy or pandas
+# Incorporate either soil moisture check (to catch emergent fields)
 # Figure work around for error of extending table if fields already exist. In the case of delta_ndvi*, if this is being re-run it will cause error
-# Find some way to test if was recently watered using NDWI before increase in delta NDVI and set as not fallow 
-# Catch emergent fields with low NDVI and low delta NDVI with heterogeneity index
 # Sort NDVI columns chronologically
 # Replace extent table with numpy to table and then join
 # Add test ensuring that imagery covers back far enough to cover fallow threshold number of days
-# Add test to ensure that all features in feature class are covered by each image
-# Add parameter for date run and set default to now
-# Add bands as parameter to make tool more dynamic
+# Add test to ensure that all features in feature class are covered by each image (or that will just return NA for area not covered)
 # Change band inputs to drop down list of range of length of number of bands in image
 # Auto detect associated bands based on metadata
 # Avoid redundancy of adding NDVI columns to feature class only to delete them before join
-# Have current date be parameter so that script can be run retroactively
 # Catch exception if user re-runs tool but did not delete joined columns from ground truth feature class (e.g. ndvi, delta, harvest, and fallow_status columns)
 # Have delta NDVI values be daily rates for better comparison between disparate image time intervals
+# Ensure that Date Range Begin parameter receives a character string consisting of eight integers
