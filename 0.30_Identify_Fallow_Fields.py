@@ -31,7 +31,6 @@
 #                      Parameters tab:    
 #                           Imagery Directory               Workspace (Data Type) > Required (Type) > Input (Direction)  
 #                           Ground Truth Feature Class     Feature Class (Data Type) > Required (Type) > Input (Direction)
-#                           Geodatabase                     Workspace (Data Type) > Required (Type) > Input (Direction)
 #                           Days Required Fallow                String (Data Type) > Required (Type) > Input (Direction)
 #                           Fallow NDVI Threshold       String (Data Type) > Required (Type) > Input (Direction)
 #                           Harvest NDVI Threshold                String (Data Type) > Required (Type) > Input (Direction)
@@ -40,8 +39,7 @@
 #
 #                       Validation tab:
 #
-
-# import arcpy
+# import arcpy, glob
 
 # class ToolValidator(object):
 #     """Class for validating a tool's parameter values and controlling
@@ -55,16 +53,13 @@
 #         """Refine the properties of a tool's parameters. This method is 
 #         called when the tool is opened."""
  
+#         # Set defalut parameter values for Days Required Fallow, Fallow NDVI Threshold, and Harvest NDVI Threshold     
+#         if not self.params[2].altered:
+#             self.params[2].value = '28'
 #         if not self.params[3].altered:
-#             self.params[3].value = '28'
+#             self.params[3].value = '0.20'
 #         if not self.params[4].altered:
-#             self.params[4].value = '0.20'
-#         if not self.params[5].altered:
-#             self.params[5].value = '-0.13'
-#         if not self.params[6].altered:
-#             self.params[6].value = '3'
-#         if not self.params[7].altered:
-#             self.params[7].value = '4'
+#             self.params[4].value = '-0.13'
                                     
 #     def updateParameters(self):
 #         """Modify the values and properties of parameters before internal
@@ -75,46 +70,59 @@
 #         """Modify the messages created by internal validation for each tool
 #         parameter. This method is called after internal validation."""
 
-#         if self.params[3].value:
-#             days_required_fallow_value = self.params[3].value
+#         # Ensure Days Required Fallow is an integer value
+#         if self.params[2].value:
+#             days_required_fallow_value = self.params[2].value
 #             try:
 #                 int(days_required_fallow_value)
 #             except ValueError:
-#                 self.params[3].setErrorMessage('{0} is not an appropriate value to pass to Days Required Fallow parameter. Please provide an integer value.'.format(days_required_fallow_value))
+#                 self.params[2].setErrorMessage('{0} is not an appropriate value to pass to Days Required Fallow parameter. Please provide an integer value.'.format(days_required_fallow_value))
         
-#         if self.params[4].value:
-#             fallow_ndvi_threshold_value = self.params[4].value 
+#         # Ensure Fallow NDVI Threshold is float between 0 and 1
+#         if self.params[3].value:
+#             fallow_ndvi_threshold_value = self.params[3].value 
 #             try:
 #                 float(fallow_ndvi_threshold_value)
 #             except ValueError:
-#                 self.params[4].setErrorMessage('{0} is not an appropriate value to pass to NDVI Fallow Threshold parameter. Please provide a decimal value between 0 and 1.'.format(fallow_ndvi_threshold_value))                                              
+#                 self.params[3].setErrorMessage('{0} is not an appropriate value to pass to NDVI Fallow Threshold parameter. Please provide a decimal value between 0 and 1.'.format(fallow_ndvi_threshold_value))                                              
 #             if float(fallow_ndvi_threshold_value) < 0 or float(fallow_ndvi_threshold_value) > 1:
-#                 self.params[4].setErrorMessage('{0} is not an appropriate value to pass to NDVI Fallow Threshold parameter. Please provide a decimal value between 0 and 1.'.format(fallow_ndvi_threshold_value)) 
-            
-#         if self.params[5].value:
-#             harvest_ndvi_threshold_value = self.params[5].value
+#                 self.params[3].setErrorMessage('{0} is not an appropriate value to pass to NDVI Fallow Threshold parameter. Please provide a decimal value between 0 and 1.'.format(fallow_ndvi_threshold_value)) 
+        
+#         # Ensure Harvest NDVI Threshold is float between -1 and 0
+#         if self.params[4].value:
+#             harvest_ndvi_threshold_value = self.params[4].value
 #             try:
 #                 float(harvest_ndvi_threshold_value)
 #             except ValueError:
-#                 self.params[5].setErrorMessage('{0} is not an appropriate value to pass to NDVI Fallow Threshold parameter. Please provide a decimal value between -1 and 0.'.format(harvest_ndvi_threshold_value))
+#                 self.params[4].setErrorMessage('{0} is not an appropriate value to pass to NDVI Fallow Threshold parameter. Please provide a decimal value between -1 and 0.'.format(harvest_ndvi_threshold_value))
             
 #             if float(harvest_ndvi_threshold_value) < -1 or float(harvest_ndvi_threshold_value) > 0:
-#                 self.params[5].setErrorMessage('{0} is not an appropriate value to pass to Harvest NDVI Threshold parameter. Please provide a decimal value between -1 and 0.'.format(harvest_ndvi_threshold_value))
+#                 self.params[4].setErrorMessage('{0} is not an appropriate value to pass to Harvest NDVI Threshold parameter. Please provide a decimal value between -1 and 0.'.format(harvest_ndvi_threshold_value))
                 
-#         if self.params[6].value:
-#             red_band_value = self.params[6].value
+#         if self.params[5].value:
+#             red_band_value = self.params[5].value
 #             try:
 #                 int(red_band_value)
 #             except ValueError:
-#                 self.params[6].setErrorMessage('{0} is not an appropriate value to pass to Red Band parameter. Please provide an integer value.'.format(red_band_value))
+#                 self.params[5].setErrorMessage('{0} is not an appropriate value to pass to Red Band parameter. Please provide an integer value.'.format(red_band_value))
                 
-#         if self.params[7].value:
-#             nir_band_value = self.params[7].value
+#         if self.params[6].value:
+#             nir_band_value = self.params[6].value
 #             try:
 #                 int(nir_band_value)
 #             except ValueError:
-#                 self.params[7].setErrorMessage('{0} is not an appropriate value to pass to NIR Band parameter. Please provide an integer value.'.format(nir_band_value))
-                
+#                 self.params[6].setErrorMessage('{0} is not an appropriate value to pass to NIR Band parameter. Please provide an integer value.'.format(nir_band_value))
+
+#         # Set drop down list for Red and NIR band selection based on number on imagery band count
+#         if self.params[0].value:
+#             file_list = os.listdir()
+#             imagery_list = []
+#             imagery_list = glob.glob('*.img')
+#             band_count_result = arcpy.GetRasterProperties_management(in_raster = imagery_list[0], property_type = 'BANDCOUNT')
+#             band_count = band_count_result.getOutput(0)
+#             self.params[5].filter.list = list(range(1, int(band_count) + 1))
+#             self.params[6].filter.list = list(range(1, int(band_count) + 1))
+            
 #     def isLicensed(self):
 #         """Set whether tool is licensed to execute."""
 #         return True
@@ -135,23 +143,20 @@ imagery_directory = arcpy.GetParameterAsText(0)
 # User specifies feature class of agricultural fields containing the following fields: 1) FIELD_ID as unique identifier and 2) Crop_Type of last season's ground truth data
 ground_truth_feature_class = arcpy.GetParameterAsText(1)
 
-# User specifies file geodatabase
-geodatabase = arcpy.GetParameterAsText(2)
-
 # User specifies threshold number of days fields should be below NDVI threshold in order to be labeled fallow
-days_required_fallow = arcpy.GetParameterAsText(3)
+days_required_fallow = arcpy.GetParameterAsText(2)
 
 # User sets NDVI threshold value (float between 0 and 1.0) below which fallow fields should fall 
-fallow_ndvi_threshold = arcpy.GetParameterAsText(4)
+fallow_ndvi_threshold = arcpy.GetParameterAsText(3)
 
 # User sets delta NDVI threshold value (float between -1 and 0) below which harvested fields should fall
-harvest_ndvi_threshold = arcpy.GetParameterAsText(5)
+harvest_ndvi_threshold = arcpy.GetParameterAsText(4)
 
 # User selects Red Band
-red_band = arcpy.GetParameterAsText(6)
+red_band = arcpy.GetParameterAsText(5)
 
 # User selects NIR Band
-nir_band = arcpy.GetParameterAsText(7)
+nir_band = arcpy.GetParameterAsText(6)
 
 #--------------------------------------------
 
@@ -263,7 +268,7 @@ include_fields.insert(0, 'FIELD_ID')
 
 include_fields.append('Crop_Type')
 
-# Create numpy array from Training Label Signame Geodatabase Table
+# Create numpy array from Ground Truth Feature Class
 array_ndvi = arcpy.da.TableToNumPyArray(in_table = ground_truth_feature_class, field_names = include_fields)
 
 # Create pandas data frame from numpy array
@@ -388,9 +393,6 @@ arcpy.da.ExtendTable(in_table = ground_truth_feature_class, table_match_field = 
 # Replace extent table with numpy to table and then join
 # Add test ensuring that imagery covers back far enough to cover fallow threshold number of days
 # Add test to ensure that all features in feature class are covered by each image (or that will just return NA for area not covered)
-# Change band inputs to drop down list of range of length of number of bands in image
-# Auto detect associated bands based on metadata
 # Avoid redundancy of adding NDVI columns to feature class only to delete them before join
 # Catch exception if user re-runs tool but did not delete joined columns from ground truth feature class (e.g. ndvi, delta, harvest, and fallow_status columns)
 # Have delta NDVI values be daily rates for better comparison between disparate image time intervals
-# Ensure that Date Range Begin parameter receives a character string consisting of eight integers
