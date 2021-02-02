@@ -4,7 +4,7 @@
 # Name:             Identify_Fallow_Fields.py
 # Author:           Kelly Meehan, USBR
 # Created:          20200501
-# Updated:          20210127 
+# Updated:          20210201 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
@@ -30,12 +30,12 @@
 #
 #                      Parameters tab:    
 #                           Imagery Directory               Workspace (Data Type) > Required (Type) > Input (Direction)  
-#                           Ground Truth Feature Class     Feature Class (Data Type) > Required (Type) > Input (Direction)
-#                           Days Required Fallow                String (Data Type) > Required (Type) > Input (Direction)
-#                           Fallow NDVI Threshold       String (Data Type) > Required (Type) > Input (Direction)
-#                           Harvest NDVI Threshold                String (Data Type) > Required (Type) > Input (Direction)
-#                           Red Band                String (Data Type) > Required (Type) > Input (Direction)
-#                           NIR Band                String (Data Type) > Required (Type) > Input (Direction)
+#                           Ground Truth Feature Class      Feature Class (Data Type) > Required (Type) > Input (Direction)
+#                           Days Required Fallow            String (Data Type) > Required (Type) > Input (Direction)
+#                           Fallow NDVI Threshold           String (Data Type) > Required (Type) > Input (Direction)
+#                           Harvest NDVI Threshold          String (Data Type) > Required (Type) > Input (Direction)
+#                           Red Band                        String (Data Type) > Required (Type) > Input (Direction)
+#                           NIR Band                        String (Data Type) > Required (Type) > Input (Direction)
 #
 #                       Validation tab:
 #
