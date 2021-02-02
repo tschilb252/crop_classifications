@@ -377,6 +377,8 @@ df_join['FIELD_ID'] = df_join.index
 output_array = numpy.array(numpy.rec.fromrecords(df_join))
 array_names = df_join.dtypes.index.tolist()
 output_array.dtype.names = tuple(array_names)
+
+# Catch exception caused when trying to join dataframe columns pre-existing in attribute table  
 try:
     arcpy.da.ExtendTable(in_table = ground_truth_feature_class, table_match_field = 'FIELD_ID', in_array = output_array, array_match_field = 'FIELD_ID')
 except TypeError:
