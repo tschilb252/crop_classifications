@@ -2,10 +2,10 @@
 ###############################################################################################
 ###############################################################################################
 
-# Name:             7.10_Segment_Training_Samples_and_Image.py
+# Name:             7.10_Iterate_Pro_Classification_Trials.py 
 # Author:           Kelly Meehan, USBR
 # Created:          20201216
-# Updated:          20200204 
+# Updated:          20200209 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
@@ -32,7 +32,7 @@
 # 0.0 Install necessary packages
 
 import arcpy, itertools, os
-from arcpy.sa import SegmentMeanShift, TrainSupportVectorMachineClassifier, ClassifyRaster
+from arcpy.sa import SegmentMeanShift, TrainSupportVectorMachineClassifier, TrainRandomTreesClassifier, TrainMaximumLikelihoodClassifier, ClassifyRaster
 
 #--------------------------------------------
 
@@ -154,9 +154,8 @@ for i in unique_segmentation_arguments_list:
     
 #----------------------------------------------------------------------------------------------
     
-# 4. Train classifier
+# 4. Classify Rasters
 
-# 3. Generate function to iterate through the following layers: segmentation, classifier, and classifier attributes 
 
 #REMOVE
 #arcpy.env.workspace = img_path
@@ -169,7 +168,12 @@ for i in unique_segmentation_arguments_list:
 
 # Iterate through each unique OBIA classifier attribute combinations
 
-def iterate_svm_training(segmented_raster_classifying, classifier_attributes):
+# Create function to run iterations of SVM classification over all unique classifier attributes (called Segment Attributes in Pro Tool GUI)
+
+#classified_raster_svm = arcpy.ListRasters('*svm*.tif')
+classified_rasters_svm = []
+
+def iterate_svm_classifer(segmented_raster_classifying, classifier_attributes):
     
     raster_basename = os.path.splitext(segmented_raster_classifying)[0] 
 
@@ -178,18 +182,19 @@ def iterate_svm_training(segmented_raster_classifying, classifier_attributes):
     #unique_segmentation = unique_segmentation_tif.split(sep = '.')[0]
     classifier_attributes_name = classifier_attributes.replace(';', '_')
     
-    definition_file_name = raster_basename + '_svm_' + classifier_attributes_name + '.ecd'
-    definition_file = os.path.join(img_path, definition_file_name)
+    definition_file_name_svm = raster_basename + '_svm_' + classifier_attributes_name + '.ecd'
+    definition_file_svm = os.path.join(img_path, definition_file_name_svm)
      
     # Run training
-    TrainSupportVectorMachineClassifier(in_raster = segmented_raster_classifying, in_training_features = training_fields, out_classifier_definition = definition_file, max_samples_per_class = 0, used_attributes = classifier_attributes)
+    TrainSupportVectorMachineClassifier(in_raster = segmented_raster_classifying, in_training_features = training_fields, out_classifier_definition = definition_file_svm, max_samples_per_class = 0, used_attributes = classifier_attributes)
     
     # Run classification
-    classified_raster = ClassifyRaster(in_raster = segmented_raster_classifying, in_classifier_definition = definition_file)    
+    classified_raster_svm = ClassifyRaster(in_raster = segmented_raster_classifying, in_classifier_definition = definition_file_svm)    
     
     # Save classification output
-    classified_raster_name = os.path.splitext(definition_file)[0] + '.tif'
-    classified_raster.save(classified_raster_name)
+    classified_raster_name_svm = os.path.splitext(definition_file_svm)[0] + '.tif'
+    classified_raster_svm.save(classified_raster_name_svm)
+    classified_rasters_svm.append(classified_raster_svm)
 
 # Iterate through segmented rasters and then obia attribute combinations
 
@@ -198,7 +203,81 @@ for s in segmented_rasters_list:
     
     for o in unique_classifier_attributes_list:
         print(o)
-        iterate_svm_training(segmented_raster_classifying = s, classifier_attributes = o)
+        iterate_svm_classifer(segmented_raster_classifying = s, classifier_attributes = o)
+
+
+#----------------------------------------------------------------------------------------------
+# Create Accuracy Assessment Points
+
+#arcpy.sa.CreateAccuracyAssessmentPoints(in_class_data = , out_points = , target_field = )
+#----------------------------------------------------------------------------------------------
+
+# Create function to run iterations of Maximum Likelihood classifier over all unique classifier attributes (called Segment Attributes in Pro Tool GUI)
+
+classified_rasters_ml = []
+
+def iterate_ml_classifier(segmented_raster_classifying, classifier_attributes):
+    
+    raster_basename = os.path.splitext(segmented_raster_classifying)[0] 
+
+    classifier_attributes_name = classifier_attributes.replace(';', '_')
+    
+    definition_file_ml = raster_basename + '_ml_' + classifier_attributes_name + '.ecd'
+    definition_file_ml = os.path.join(img_path, definition_file_ml)
+     
+    # Run training
+    TrainMaximumLikelihoodClassifier(in_raster = segmented_raster_classifying, in_training_features = training_fields, out_classifier_definition = definition_file_ml, used_attributes = classifier_attributes)
+    
+    # Run classification
+    classified_raster_ml = ClassifyRaster(in_raster = segmented_raster_classifying, in_classifier_definition = definition_file_ml)    
+    
+    # Save classification output
+    classified_raster_name_ml = os.path.splitext(definition_file_ml)[0] + '.tif'
+    classified_raster_ml.save(classified_raster_name_ml)
+    classified_rasters_ml.append(classified_raster_ml)
+
+    # Create 
+# Iterate through segmented rasters and then obia attribute combinations
+
+for l in segmented_rasters_list:
+    print(l)
+    
+    for c in unique_classifier_attributes_list:
+        print(c)
+        iterate_ml_classifier(segmented_raster_classifying = l, classifier_attributes = c)
+
+# Create function to run iterations of Maximum Likelihood classifier over all unique classifier attributes (called Segment Attributes in Pro Tool GUI)
+
+classified_rasters_rt = []
+
+def iterate_rt_classifier(segmented_raster_classifying, classifier_attributes):
+    
+    raster_basename = os.path.splitext(segmented_raster_classifying)[0] 
+
+    classifier_attributes_name = classifier_attributes.replace(';', '_')
+    
+    definition_file_rt = raster_basename + '_rt_' + classifier_attributes_name + '.ecd'
+    definition_file_rt = os.path.join(img_path, definition_file_rt)
+     
+    # Run training
+    TrainRandomTreesClassifier(in_raster = segmented_raster_classifying, in_training_features = training_fields, out_classifier_definition = definition_file_rt, used_attributes = classifier_attributes)
+    
+    # Run classification
+    classified_raster_rt = ClassifyRaster(in_raster = segmented_raster_classifying, in_classifier_definition = definition_file_rt)    
+    
+    # Save classification output
+    classified_raster_name_rt = os.path.splitext(definition_file_rt)[0] + '.tif'
+    classified_raster_rt.save(classified_raster_name_rt)
+    classified_rasters_rt.append(classified_raster_rt)
+
+# Iterate through segmented rasters and then obia attribute combinations
+
+for r in segmented_rasters_list:
+    print(r)
+    
+    for u in unique_classifier_attributes_list:
+        print(u)
+        iterate_rt_classifier(segmented_raster_classifying = r, classifier_attributes = u)
 
 
 ########################################################################################################################
