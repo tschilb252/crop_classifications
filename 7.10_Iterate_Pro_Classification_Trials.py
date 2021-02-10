@@ -31,7 +31,7 @@
 
 # 0.0 Install necessary packages
 
-import arcpy, itertools, os
+import arcpy, itertools, os, numpy, pandas
 from arcpy.sa import SegmentMeanShift, TrainSupportVectorMachineClassifier, TrainRandomTreesClassifier, TrainMaximumLikelihoodClassifier, ClassifyRaster
 
 #--------------------------------------------
@@ -170,7 +170,7 @@ for i in unique_segmentation_arguments_list:
 
 # Create function to run iterations of SVM classification over all unique classifier attributes (called Segment Attributes in Pro Tool GUI)
 
-#classified_raster_svm = arcpy.ListRasters('*svm*.tif')
+#classified_rasters_svm = arcpy.ListRasters('*svm*.tif')
 classified_rasters_svm = []
 
 def iterate_svm_classifer(segmented_raster_classifying, classifier_attributes):
@@ -205,11 +205,6 @@ for s in segmented_rasters_list:
         print(o)
         iterate_svm_classifer(segmented_raster_classifying = s, classifier_attributes = o)
 
-
-#----------------------------------------------------------------------------------------------
-# Create Accuracy Assessment Points
-
-#arcpy.sa.CreateAccuracyAssessmentPoints(in_class_data = , out_points = , target_field = )
 #----------------------------------------------------------------------------------------------
 
 # Create function to run iterations of Maximum Likelihood classifier over all unique classifier attributes (called Segment Attributes in Pro Tool GUI)
@@ -279,6 +274,47 @@ for r in segmented_rasters_list:
         print(u)
         iterate_rt_classifier(segmented_raster_classifying = r, classifier_attributes = u)
 
+#----------------------------------------------------------------------------------------------
+
+# Create Accuracy Assessment Points
+accuracy_points_basename = accuracy_fields.rsplit(sep = '_', maxsplit = 2)[0] 
+accuracy_points = accuracy_points_basename + '_accuracy_points.shp'
+arcpy.sa.CreateAccuracyAssessmentPoints(in_class_data = accuracy_fields, out_points = accuracy_points, target_field = 'GROUND_TRUTH')
+
+# Iterate through classified rasters and create output master table of accuracy assessment
+
+df_master_matrix = pandas.DataFrame(columns = ['Accuracy'])
+
+
+for c in classified_raster_svm:
+    raster_basename = os.path.splitext(c)[0] 
+
+    # Assign value to Accuracy Assessment Points Feature Class' classified column
+    accuracy_assessment_points_name = raster_basename.replace('fields', 'accuracy_assessment')
+    accuracy_assessment_points = os.path.join(gdb_path, accuracy_assessment_points_name)
+    arcpy.sa.UpdateAccuracyAssessmentPoints(in_class_data = c, in_points = accuracy_points, out_points = os.path.join(gdb_path, accuracy_assessment_points_name), target_field = 'CLASSIFIED')
+    
+    # Create Confusion Matrix
+    confusion_matrix_table = accuracy_assessment_points.replace('accuracy_assessment', 'confusion_matrix')
+    arcpy.sa.ComputeConfusionMatrix(in_accuracy_assessment_points = accuracy_assessment_points, out_confusion_matrix = confusion_matrix_table)
+
+    # Get list of Pro confusion matrix column names
+    confusion_matrix_fields = [field.name for field in arcpy.ListFields(dataset = confusion_matrix_table)]
+    
+    # Create numpy array from confusion matrix    
+    array_confusion_matrix = arcpy.da.TableToNumPyArray(in_table = confusion_matrix_table, field_names = confusion_matrix_fields)
+       
+    # Create dataframe from numpy array
+    df_confusion_matrix = pandas.DataFrame(data = array_confusion_matrix)
+    
+    # Convert ClassValue column to index
+    df_confusion_matrix.set_index('ClassValue', inplace = True)
+    
+    # Extract overall accuracy rate from matrix and add to master dataframe
+    df_master_matrix.at[raster_basename, 'Accuracy'] = df_confusion_matrix.loc['P_Accuracy', 'U_Accuracy']
+    
+
+#----------------------------------------------------------------------------------------------
 
 ########################################################################################################################
 
