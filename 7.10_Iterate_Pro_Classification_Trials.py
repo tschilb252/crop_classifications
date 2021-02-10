@@ -5,7 +5,7 @@
 # Name:             7.10_Iterate_Pro_Classification_Trials.py 
 # Author:           Kelly Meehan, USBR
 # Created:          20201216
-# Updated:          20200209 
+# Updated:          20200210 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
@@ -31,7 +31,7 @@
 
 # 0.0 Install necessary packages
 
-import arcpy, itertools, os, numpy, pandas
+import arcpy, itertools, os, numpy, pandas, re
 from arcpy.sa import SegmentMeanShift, TrainSupportVectorMachineClassifier, TrainRandomTreesClassifier, TrainMaximumLikelihoodClassifier, ClassifyRaster
 
 #--------------------------------------------
@@ -285,9 +285,9 @@ arcpy.sa.CreateAccuracyAssessmentPoints(in_class_data = accuracy_fields, out_poi
 
 df_master_matrix = pandas.DataFrame(columns = ['Accuracy'])
 
+def generate_master_accuracy_assessment(classified_raster):
 
-for c in classified_raster_svm:
-    raster_basename = os.path.splitext(c)[0] 
+    raster_basename = os.path.splitext(classified_raster)[0] 
 
     # Assign value to Accuracy Assessment Points Feature Class' classified column
     accuracy_assessment_points_name = raster_basename.replace('fields', 'accuracy_assessment')
@@ -313,15 +313,28 @@ for c in classified_raster_svm:
     # Extract overall accuracy rate from matrix and add to master dataframe
     df_master_matrix.at[raster_basename, 'Accuracy'] = df_confusion_matrix.loc['P_Accuracy', 'U_Accuracy']
     
+    # Add columns to distinguish attributes
+    for index, row in df_master_matrix.iterrows():
+        df_master_matrix.loc[index, 'classifier'] = row.name.split('_')[8]
+        df_master_matrix.loc[index, 'segmentation_attributes'] = segmentation_attributes = re.search('fields_(.+?)_svm', row.name).group(1)
+        df_master_matrix.loc[index, 'classifier_attributes'] = row.name.split('svm_', 1)[1]
+    
+# Iterate through classified rasters to produce master accuracy assessment table          
+for v in classified_raster_svm:
+    generate_master_accuracy_assessment(classified_raster = v, classifier = )
+    
+    # Export master accuracy assessment dataframe
+    df_master_matrix.to_csv(path_or_buf = os.path.join(docs_path, 'master_accuracy_asssessment.csv'), sep = ',')
 
-#----------------------------------------------------------------------------------------------
+#-------------------------------------
+---------------------------------------------------------
 
 ########################################################################################################################
 
 
 ## TTDL
 # When converting to tool, allow user to select argument values to pass to segmentation parameter.
-# Add if statement to convert to polygon only if *_training_* (fileds segmentation stays raster)
+# Add if statement to convert to polygon only if *_training_* (fields segmentation stays raster)
 # Change names to include training_segments so can be distinguished when searching geodatabase by wildcard training
 # Change baseline to region_time
 # Change filed_segment_rasters to point to direct file (without needing env.workspace) or have all one function: segmentation -> train -> classification
