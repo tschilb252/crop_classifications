@@ -171,6 +171,9 @@ for i in unique_segmentation_arguments_list:
 # Create function to run iterations of SVM classification over all unique classifier attributes (called Segment Attributes in Pro Tool GUI)
 
 #classified_rasters_svm = arcpy.ListRasters('*svm*.tif')
+#classified_rasters_rt = arcpy.ListRasters('*rt*.tif')
+#classified_rasters_ml = arcpy.ListRasters('*ml*.tif')
+
 classified_rasters_svm = []
 
 def iterate_svm_classifer(segmented_raster_classifying, classifier_attributes):
@@ -285,18 +288,68 @@ arcpy.sa.CreateAccuracyAssessmentPoints(in_class_data = accuracy_fields, out_poi
 
 df_master_matrix = pandas.DataFrame(columns = ['Accuracy'])
 
-def generate_master_accuracy_assessment(classified_raster):
+def generate_master_accuracy_assessment(classified_rasters_list, classifier_string):
+        
+    for v in classified_rasters_list:
+        raster_basename = os.path.splitext(v)[0] 
+    
+        # Assign value to Accuracy Assessment Points Feature Class' classified column
+        accuracy_assessment_points_name = raster_basename.replace('fields', 'accuracy_assessment')
+        accuracy_assessment_points = os.path.join(gdb_path, accuracy_assessment_points_name)
+        arcpy.sa.UpdateAccuracyAssessmentPoints(in_class_data = c, in_points = accuracy_points, out_points = os.path.join(gdb_path, accuracy_assessment_points_name), target_field = 'CLASSIFIED')
+        
+        # Create Confusion Matrix
+        confusion_matrix_table = accuracy_assessment_points.replace('accuracy_assessment', 'confusion_matrix')
+        arcpy.sa.ComputeConfusionMatrix(in_accuracy_assessment_points = accuracy_assessment_points, out_confusion_matrix = confusion_matrix_table)
+    
+        # Get list of Pro confusion matrix column names
+        confusion_matrix_fields = [field.name for field in arcpy.ListFields(dataset = confusion_matrix_table)]
+        
+        # Create numpy array from confusion matrix    
+        array_confusion_matrix = arcpy.da.TableToNumPyArray(in_table = confusion_matrix_table, field_names = confusion_matrix_fields)
+           
+        # Create dataframe from numpy array
+        df_confusion_matrix = pandas.DataFrame(data = array_confusion_matrix)
+        
+        # Convert ClassValue column to index
+        df_confusion_matrix.set_index('ClassValue', inplace = True)
+        
+        # Extract overall accuracy rate from matrix and add to master dataframe
+        df_master_matrix.at[raster_basename, 'Accuracy'] = df_confusion_matrix.loc['P_Accuracy', 'U_Accuracy']
+        
+        # Add columns to distinguish attributes
+        for index, row in df_master_matrix.iterrows():
+            df_master_matrix.loc[index, 'classifier'] = row.name.split('_')[8]
+            
+            df_master_matrix.loc[index, 'segmentation_attributes'] = segmentation_attributes = re.search('fields_(.+?)_' + classifier_string, row.name).group(1)
+            df_master_matrix.loc[index, 'classifier_attributes'] = row.name.split(classifier_string + '_', 1)[1]
+        
+         
+# Add SVM accuracy assessment data to master matrix dataframe       
+generate_master_accuracy_assessment(classified_rasters_list = classified_rasters_svm, classifier_string = 'svm')
 
+        
+# TEST in memory
+
+# Iterate through classified rasters and create output master table of accuracy assessment
+
+
+
+def generate_master_accuracy_assessment(classified_raster, classifier_string):
+    print(classified_raster)
     raster_basename = os.path.splitext(classified_raster)[0] 
-
+    print(raster_basename)
     # Assign value to Accuracy Assessment Points Feature Class' classified column
     accuracy_assessment_points_name = raster_basename.replace('fields', 'accuracy_assessment')
-    accuracy_assessment_points = os.path.join(gdb_path, accuracy_assessment_points_name)
-    arcpy.sa.UpdateAccuracyAssessmentPoints(in_class_data = c, in_points = accuracy_points, out_points = os.path.join(gdb_path, accuracy_assessment_points_name), target_field = 'CLASSIFIED')
+    print(accuracy_assessment_points_name)
+    accuracy_assessment_points = r'in_memory\accuracy_assessment_points' 
+    arcpy.sa.UpdateAccuracyAssessmentPoints(in_class_data = classified_raster, in_points = accuracy_points, out_points = accuracy_assessment_points, target_field = 'CLASSIFIED')
+    print('completed updating')
     
     # Create Confusion Matrix
-    confusion_matrix_table = accuracy_assessment_points.replace('accuracy_assessment', 'confusion_matrix')
+    confusion_matrix_table = os.path.join(gdb_path, raster_basename.replace('fields', 'accuracy_assessment'))
     arcpy.sa.ComputeConfusionMatrix(in_accuracy_assessment_points = accuracy_assessment_points, out_confusion_matrix = confusion_matrix_table)
+    print('completed confusion')
 
     # Get list of Pro confusion matrix column names
     confusion_matrix_fields = [field.name for field in arcpy.ListFields(dataset = confusion_matrix_table)]
@@ -316,18 +369,81 @@ def generate_master_accuracy_assessment(classified_raster):
     # Add columns to distinguish attributes
     for index, row in df_master_matrix.iterrows():
         df_master_matrix.loc[index, 'classifier'] = row.name.split('_')[8]
-        df_master_matrix.loc[index, 'segmentation_attributes'] = segmentation_attributes = re.search('fields_(.+?)_svm', row.name).group(1)
-        df_master_matrix.loc[index, 'classifier_attributes'] = row.name.split('svm_', 1)[1]
-    
-# Iterate through classified rasters to produce master accuracy assessment table          
-for v in classified_raster_svm:
-    generate_master_accuracy_assessment(classified_raster = v, classifier = )
-    
-    # Export master accuracy assessment dataframe
-    df_master_matrix.to_csv(path_or_buf = os.path.join(docs_path, 'master_accuracy_asssessment.csv'), sep = ',')
+        
+        df_master_matrix.loc[index, 'segmentation_attributes'] = segmentation_attributes = re.search('fields_(.+?)_' + classifier_string, row.name).group(1)
+        df_master_matrix.loc[index, 'classifier_attributes'] = row.name.split(classifier_string + '_', 1)[1]
 
-#-------------------------------------
----------------------------------------------------------
+ 
+     
+# Add accuracy assessment data to master matrix dataframe       
+for v in classified_rasters_rt:
+    generate_master_accuracy_assessment(classified_raster = v, classifier_string = 'rt')
+
+# Export master accuracy assessment dataframe
+df_master_matrix.to_csv(path_or_buf = os.path.join(docs_path, 'master_accuracy_asssessment_' + classifier_string + '.csv'), sep = ',')       
+
+# END TEST in memory
+
+# TEST function parameter is list of rasters
+
+
+# Iterate through classified rasters and create output master table of accuracy assessment
+
+df_master_matrix = pandas.DataFrame(columns = ['Accuracy'])
+
+def generate_master_accuracy_assessment(classified_raster_list, classifier_string):
+    for v in classified_raster_list:
+        print(v)
+        raster_basename = os.path.splitext(v)[0] 
+        print(raster_basename)
+        # Assign value to Accuracy Assessment Points Feature Class' classified column
+        accuracy_assessment_points_name = raster_basename.replace('fields', 'accuracy_assessment')
+        print(accuracy_assessment_points_name)
+        accuracy_assessment_points = r'in_memory\accuracy_assessment_points' 
+        arcpy.sa.UpdateAccuracyAssessmentPoints(in_class_data = v, in_points = accuracy_points, out_points = accuracy_assessment_points, target_field = 'CLASSIFIED')
+        print('completed updating')
+        
+        # Create Confusion Matrix
+        confusion_matrix_table = os.path.join(gdb_path, raster_basename.replace('fields', 'accuracy_assessment'))
+        arcpy.sa.ComputeConfusionMatrix(in_accuracy_assessment_points = accuracy_assessment_points, out_confusion_matrix = confusion_matrix_table)
+        print('completed confusion')
+    
+        # Get list of Pro confusion matrix column names
+        confusion_matrix_fields = [field.name for field in arcpy.ListFields(dataset = confusion_matrix_table)]
+        
+        # Create numpy array from confusion matrix    
+        array_confusion_matrix = arcpy.da.TableToNumPyArray(in_table = confusion_matrix_table, field_names = confusion_matrix_fields)
+           
+        # Create dataframe from numpy array
+        df_confusion_matrix = pandas.DataFrame(data = array_confusion_matrix)
+        
+        # Convert ClassValue column to index
+        df_confusion_matrix.set_index('ClassValue', inplace = True)
+        
+        # Extract overall accuracy rate from matrix and add to master dataframe
+        df_master_matrix.at[raster_basename, 'Accuracy'] = df_confusion_matrix.loc['P_Accuracy', 'U_Accuracy']
+        
+        # Add columns to distinguish attributes
+        for index, row in df_master_matrix.iterrows():
+            df_master_matrix.loc[index, 'classifier'] = row.name.split('_')[8]
+            
+            df_master_matrix.loc[index, 'segmentation_attributes'] = segmentation_attributes = re.search('fields_(.+?)_' + classifier_string, row.name).group(1)
+            df_master_matrix.loc[index, 'classifier_attributes'] = row.name.split(classifier_string + '_', 1)[1]
+    
+# Export master accuracy assessment dataframe
+df_master_matrix.to_csv(path_or_buf = os.path.join(docs_path, 'master_accuracy_asssessment' '.csv'), sep = ',')       
+     
+# Add accuracy assessment data to master matrix dataframe       
+
+generate_master_accuracy_assessment(classified_raster_list = classified_rasters_ml, classifier_string = 'ml')
+
+#END TEST function parameter is list of rasters
+
+
+
+
+#----------------------------------------------------------------------------------------------
+
 
 ########################################################################################################################
 
