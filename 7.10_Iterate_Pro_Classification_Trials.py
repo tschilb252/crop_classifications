@@ -16,6 +16,17 @@
 
 #----------------------------------------------------------------------------------------------
 
+# Tool setup:       The script tool's properties can be set as follows: 
+#
+#                      Parameters tab:    
+#                           Training Fields Subset Raster   Raster Dataset (Data Type) > Required (Type) > Input (Direction)  
+#                           Fields Borders Subset Raster   Raster Dataset (Data Type) > Required (Type) > Input (Direction)
+#                           Image Directory                 Workspace (Data Type) > Required (Type) > Input (Direction)                    
+#                           Shapefile Directory             Workspace (Data Type) > Required (Type) > Input (Direction)                    
+#                           Documents Directory             Workspace (Data Type) > Required (Type) > Input (Direction)                    
+#                           Geodatabase                     Workspace (Data Type) > Required (Type) > Input (Direction)
+#                           Training Fields Shapefile       Feature Class (Data Type) > Required (Type) > Input (Direction)
+#                           Accuracy Fields Shapefile       Feature Class (Data Type) > Required (Type) > Input (Direction)
 
 ###############################################################################################
 ###############################################################################################
@@ -31,7 +42,7 @@
 
 # 0.0 Install necessary packages
 
-import arcpy, itertools, os, numpy, pandas, re
+import arcpy, itertools, os, pandas, re
 from arcpy.sa import SegmentMeanShift, TrainSupportVectorMachineClassifier, TrainRandomTreesClassifier, TrainMaximumLikelihoodClassifier, ClassifyRaster
 
 #--------------------------------------------
@@ -47,7 +58,7 @@ fields_subset = arcpy.GetParameterAsText(1)
 # User selects Image Directory
 img_path = arcpy.GetParameterAsText(2)
 
-# User selects Coverage Directory
+# User selects Shapefile Directory
 covs_path = arcpy.GetParameterAsText(3)
 
 # User selects Documents Directory
@@ -58,6 +69,9 @@ gdb_path = arcpy.GetParameterAsText(5)
 
 # User selects Training Fields Shapefile
 training_fields = arcpy.GetParameterAsText(6)
+
+# User selects Accuracy Fields Shapefile
+accuracy_fields = arcpy.GetParameterAsText(7)
 
 #--------------------------------------------
 
@@ -103,7 +117,8 @@ spatial_detail_list = ['5', '10', '15', '20']
 min_segment_size_list = ['10', '20', '30']
 
 # Create list of band selection arguments to iterate through and pass to band indexes parameter
-bands_indexes_dictionary = {'2 3 7': '237', '3 7 9': '379'}
+bands_indexes_dictionary = {'2 3 4': '234', '3 4 5': '345'} # Landsat-7 download with bands 1-5, 7 or Landsat-8 with bands 2-7 downloaded 
+#bands_indexes_dictionary = {'2 3 7': '237', '3 7 9': '379'} # Sentinel-2 download with bands 2-8, 10-12 downloaded
 band_indexes_list = list(bands_indexes_dictionary.keys())
 
 # Create list of all parameters iterating through in Segment Mean Shift function
@@ -303,7 +318,6 @@ def generate_master_accuracy_assessment(classified_raster_list, classifier_strin
         # Create Confusion Matrix
         confusion_matrix_table = os.path.join(gdb_path, raster_basename.replace('fields', 'accuracy_assessment'))
         arcpy.sa.ComputeConfusionMatrix(in_accuracy_assessment_points = accuracy_assessment_points, out_confusion_matrix = confusion_matrix_table)
-        print('completed confusion')
     
         # Get list of Pro confusion matrix column names
         confusion_matrix_fields = [field.name for field in arcpy.ListFields(dataset = confusion_matrix_table)]
@@ -327,6 +341,9 @@ def generate_master_accuracy_assessment(classified_raster_list, classifier_strin
             df_master_matrix.loc[index, 'segmentation_attributes'] = segmentation_attributes = re.search('fields_(.+?)_' + classifier_string, row.name).group(1)
             df_master_matrix.loc[index, 'classifier_attributes'] = row.name.split(classifier_string + '_', 1)[1]     
      
+    # Export master accuracy assessment dataframe
+    df_master_matrix.to_csv(path_or_buf = os.path.join(docs_path, 'master_accuracy_asssessment_' + classifier_string + '.csv'), sep = ',') 
+        
 # Run accuracy assessment function for svm rasters
 generate_master_accuracy_assessment(classified_raster_list = classified_rasters_svm, classifier_string = 'svm')
 
@@ -336,8 +353,7 @@ generate_master_accuracy_assessment(classified_raster_list = classified_rasters_
 # Run accuracy assessment function for ml rasters
 generate_master_accuracy_assessment(classified_raster_list = classified_rasters_ml, classifier_string = 'ml')
 
-# Export master accuracy assessment dataframe
-df_master_matrix.to_csv(path_or_buf = os.path.join(docs_path, 'master_accuracy_asssessment' '.csv'), sep = ',')  
+ 
 
 #----------------------------------------------------------------------------------------------
 
