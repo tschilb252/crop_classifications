@@ -5,14 +5,14 @@
 # Name:             7.05_Prepare_Training_and_Accuracy_Fields_for_Pro_Classification.py 
 # Author:           Kelly Meehan, USBR
 # Created:          20201216
-# Updated:          20210206 
+# Updated:          20210216 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
 
 # Notes:            This script is intended to be used for a Script Tool within ArcGIS Pro; it is not intended as a stand-alone script.
 
-# Description: Add two attribute table fields required for both Pro classification and accuracy assessment: classvalue (identical to existing crop_type) and classname (corresponding to crop_type numerical value).
+# Description:      Add two attribute table fields required for both Pro classification and accuracy assessment: classvalue (identical to existing crop_type) and classname (corresponding to crop_type numerical value).
 
 ###############################################################################################
 ###############################################################################################
@@ -20,8 +20,8 @@
 # This script will:
 
 # 0. Set-up
-#1. Create dictionary as lookup table for crop numerical value to crop type name
-
+# 1. Create dictionary as lookup table for crop numerical value to crop type name
+# 2. Add necessary attribute table fields, classvalue and classname to both Training Fields Shapefile and Accuracy Fields Shapefile
 
 #----------------------------------------------------------------------------------------------
 
@@ -42,7 +42,7 @@ accuracy_fields = arcpy.GetParameterAsText(1)
 
 #----------------------------------------------------------------------------------------------
 
-#1. Create dictionary as lookup table for crop numerical value to crop type name
+# 1. Create dictionary as lookup table for crop numerical value to crop type name
 
 # Create list of all possible crop numbers
 crop_code = [100, 200, 400, 401, 402, 403, 404, 405, 500, 501, 502, 503, 600, 601, 602, 603, 604, 605, 606, 700, 701, 702, 703, 704, 705, 706, 800, 801, 802, 803, 804, 806, 1000, 1100, 1103, 1104, 1200, 1201, 1202, 1203, 1204, 1205, 1206, 1207, 1208, 1209, 1300, 1301, 1302, 1303, 1304, 1305, 1306, 1400, 1402, 1403, 1600, 1601, 1602, 1603, 1604, 1800, 1801, 1802, 1803, 1804, 1805, 1806, 1807, 1808, 1809, 1900, 1901, 1902, 1903, 1904, 2000, 2001, 2100, 3400, 3401, 3402, 3403, 3404]
@@ -85,18 +85,6 @@ add_classvalue_classname(training_fields)
 add_classvalue_classname(accuracy_fields)
 
 #----------------------------------------------------------------------------------------------
-
-# 3. For iterating through multiple feature classes for trials (when using not whole field, but segmented training fields instead)
-
-# Set Project Geodatabase as workspace
-arcpy.env.workspace = r''
-
-# Make list of fields segments
-training_segment_feature_classes = arcpy.ListFeatureClasses(wild_card = '*_training*')    
-
-for j in training_segment_feature_classes:
-    add_classvalue_classname(j)
-
 
 ## TTDL
 
