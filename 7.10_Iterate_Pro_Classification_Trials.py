@@ -5,7 +5,7 @@
 # Name:             7.10_Iterate_Pro_Classification_Trials.py 
 # Author:           Kelly Meehan, USBR
 # Created:          20201216
-# Updated:          20200210 
+# Updated:          20210217 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
@@ -20,7 +20,7 @@
 #
 #                      Parameters tab:    
 #                           Training Fields Subset Raster   Raster Dataset (Data Type) > Required (Type) > Input (Direction)  
-#                           Fields Borders Subset Raster   Raster Dataset (Data Type) > Required (Type) > Input (Direction)
+#                           Fields Borders Subset Raster    Raster Dataset (Data Type) > Required (Type) > Input (Direction)
 #                           Image Directory                 Workspace (Data Type) > Required (Type) > Input (Direction)                    
 #                           Shapefile Directory             Workspace (Data Type) > Required (Type) > Input (Direction)                    
 #                           Documents Directory             Workspace (Data Type) > Required (Type) > Input (Direction)                    
@@ -35,6 +35,10 @@
 
 # 0. Set-up
 # 1. Create list of tuples for all combinations of OBIA attributes to iterate through (NOTE: MEAN and SD not included as no auxilary raster used) 
+# 2. Create list of combinations of segmentation arguments to iterate through
+# 3. Generate Segmentation Rasters
+# 4. Run SVM classifications
+# 6. Run iterations of Random Trees classifier over all unique classifier attributes (called Segment Attributes in Pro Tool GUI)
 
 #----------------------------------------------------------------------------------------------
 
@@ -130,7 +134,7 @@ unique_segmentation_arguments_list = list(itertools.product(*parameters_master_l
 #----------------------------------------------------------------------------------------------
 
 # 3. Generate Segmentation Rasters
-
+segmented_rasters_list = glob.glob(str(img_path) + '/*fields*.tif')
 segmented_rasters_list = []
 
 # Generate function to iterate through the following layers: segmentation, classifier, and classifier attributes 
@@ -169,8 +173,7 @@ for i in unique_segmentation_arguments_list:
     
 #----------------------------------------------------------------------------------------------
     
-# 4. Classify Rasters
-
+# 4. Run iterations of Support Vector Machine classifications
 
 #REMOVE
 #arcpy.env.workspace = img_path
@@ -191,6 +194,7 @@ for i in unique_segmentation_arguments_list:
 
 classified_rasters_svm = []
 
+# Create function to run iterations of Support Vector Machine classifier over all unique classifier attributes (called Segment Attributes in Pro Tool GUI)
 def iterate_svm_classifer(segmented_raster_classifying, classifier_attributes):
     
     raster_basename = os.path.splitext(segmented_raster_classifying)[0] 
@@ -225,10 +229,11 @@ for s in segmented_rasters_list:
 
 #----------------------------------------------------------------------------------------------
 
-# Create function to run iterations of Maximum Likelihood classifier over all unique classifier attributes (called Segment Attributes in Pro Tool GUI)
+# 5. Run iterations of Maximum Likelihood classifications
 
 classified_rasters_ml = []
 
+# Create function to run iterations of Maximum Likelihood classifier over all unique classifier attributes (called Segment Attributes in Pro Tool GUI)
 def iterate_ml_classifier(segmented_raster_classifying, classifier_attributes):
     
     raster_basename = os.path.splitext(segmented_raster_classifying)[0] 
@@ -259,9 +264,14 @@ for l in segmented_rasters_list:
         print(c)
         iterate_ml_classifier(segmented_raster_classifying = l, classifier_attributes = c)
 
-# Create function to run iterations of Maximum Likelihood classifier over all unique classifier attributes (called Segment Attributes in Pro Tool GUI)
+#----------------------------------------------------------------------------------------------
+
+
+# 6. Run Random Trees classifications
 
 classified_rasters_rt = []
+
+# Crate function to run iterations of Random Trees classifier over all unique classifier attributes (called Segment Attributes in Pro Tool GUI)
 
 def iterate_rt_classifier(segmented_raster_classifying, classifier_attributes):
     
@@ -294,6 +304,8 @@ for r in segmented_rasters_list:
 
 #----------------------------------------------------------------------------------------------
 
+# 7. Generate accuracy assessment summary table for each of the three classifiers
+
 # Create Accuracy Assessment Points with attribute table field GrndTruth populated with values from Accuracy Assessment Feature Class
 
 accuracy_points_basename = accuracy_fields.rsplit(sep = '_', maxsplit = 2)[0] 
@@ -310,13 +322,14 @@ def generate_master_accuracy_assessment(classified_raster_list, classifier_strin
         
         # Populate accuracy assessment feature class attribute table field Classified with value from classified raster
         
-        raster_basename = os.path.splitext(v)[0] 
-        accuracy_assessment_points_name = raster_basename.replace('fields', 'accuracy_assessment')
+        raster_basename = os.path.basename(str(v))
+        raster_name = os.path.splitext(raster_basename)[0]
+        #accuracy_assessment_points_name = raster_basename.replace('fields', 'accuracy_assessment')
         accuracy_assessment_points = r'in_memory\accuracy_assessment_points' 
         arcpy.sa.UpdateAccuracyAssessmentPoints(in_class_data = v, in_points = accuracy_points, out_points = accuracy_assessment_points, target_field = 'CLASSIFIED')
         
         # Create Confusion Matrix
-        confusion_matrix_table = os.path.join(gdb_path, raster_basename.replace('fields', 'accuracy_assessment'))
+        confusion_matrix_table = os.path.join(gdb_path, raster_name.replace('fields', 'accuracy_assessment'))
         arcpy.sa.ComputeConfusionMatrix(in_accuracy_assessment_points = accuracy_assessment_points, out_confusion_matrix = confusion_matrix_table)
     
         # Get list of Pro confusion matrix column names
@@ -338,12 +351,14 @@ def generate_master_accuracy_assessment(classified_raster_list, classifier_strin
         
         for index, row in df_master_matrix.iterrows():
             df_master_matrix.loc[index, 'classifier'] = row.name.split('_')[8]
-            df_master_matrix.loc[index, 'segmentation_attributes'] = segmentation_attributes = re.search('fields_(.+?)_' + classifier_string, row.name).group(1)
+            df_master_matrix.loc[index, 'segmentation_attributes']  = re.search('fields_(.+?)_' + classifier_string, row.name).group(1)
             df_master_matrix.loc[index, 'classifier_attributes'] = row.name.split(classifier_string + '_', 1)[1]     
      
     # Export master accuracy assessment dataframe
     df_master_matrix.to_csv(path_or_buf = os.path.join(docs_path, 'master_accuracy_asssessment_' + classifier_string + '.csv'), sep = ',') 
-        
+
+#--------------------------------------------
+       
 # Run accuracy assessment function for svm rasters
 generate_master_accuracy_assessment(classified_raster_list = classified_rasters_svm, classifier_string = 'svm')
 
@@ -352,11 +367,6 @@ generate_master_accuracy_assessment(classified_raster_list = classified_rasters_
 
 # Run accuracy assessment function for ml rasters
 generate_master_accuracy_assessment(classified_raster_list = classified_rasters_ml, classifier_string = 'ml')
-
- 
-
-#----------------------------------------------------------------------------------------------
-
 
 ########################################################################################################################
 
@@ -371,4 +381,10 @@ generate_master_accuracy_assessment(classified_raster_list = classified_rasters_
 # Add band selection as parameter
 # Add OBIA attributes as drop down list multi-value parameter 
 # Add classified to name of classified raster in place of _fields
-
+# Best trial cut out two fields; find out why
+# Add naming convention assumption
+# Add nomenclature assumptions
+# Add description
+# Delete to remove sections
+# Create separate lists for segmented rasters, one for fields and one for training
+# Create check box for running whole training fields of segments (in which case segment training fileds and create polygons)
