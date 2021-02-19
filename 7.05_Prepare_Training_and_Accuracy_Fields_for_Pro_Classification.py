@@ -79,10 +79,10 @@ def add_classvalue_classname(feature_class_updating):
             cursor.updateRow(row)
 
 # Run function for Training Fields Shapefile
-add_classvalue_classname(training_fields)
+add_classvalue_classname(feature_class_updating = training_fields)
 
 # Run function for Accuracy Assessment Shapefile
-add_classvalue_classname(accuracy_fields)
+add_classvalue_classname(feature_class_updating = accuracy_fields)
 
 #----------------------------------------------------------------------------------------------
 
