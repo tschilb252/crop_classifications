@@ -148,14 +148,8 @@ covs_path = arcpy.GetParameterAsText(3)
 # User selects Documents Directory
 docs_path = arcpy.GetParameterAsText(4)
 
-# User selects Training Fields Shapefile
-training_fields = arcpy.GetParameterAsText(5)
-
-# User selects Accuracy Fields Shapefile
-accuracy_fields = arcpy.GetParameterAsText(6)
-
 # User selects two digit classification iteration number
-iteration_number = arcpy.GetParameterAsText(7)
+iteration_number = arcpy.GetParameterAsText(5)
 
 #--------------------------------------------
 
