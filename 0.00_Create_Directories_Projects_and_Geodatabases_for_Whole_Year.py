@@ -5,7 +5,7 @@
 # Name:             0.00_Create_Directories_Projects_and_Geodatabases_for_Whole_Year.py
 # Author:           Kelly Meehan, USBR
 # Created:          20190528
-# Updated:          20200607 
+# Updated:          20210217 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
@@ -24,8 +24,8 @@
 #                      Parameters tab:    
 #                           Year                            Raster Layer (Data Type) > Required (Type) > Input (Direction)                  
 #                           ArcGIS Pro Project Template     File (Data Type) > Required (Type) > Input (Direction)
-#                           Read MeTemplate                 File (Data Type) > Required (Type) > Input (Direction)                    
-#                           Output Directory                Workspace (Data Type) > Required (Type) > Input (Direction)                    
+#                           Read MeTemplate                 File (Data Type) > Required (Type) > Input (Direction)                                      
+#                           Root Directory                  Workspace (Data Type) > Required (Type) > Input (Direction) 
 #                           Number of Time periods          Long (Data Type) > Required (Type) > Input (Direction)                    
 #                           Regions                         String-Multiple Values (Data Type) > Required (Type) > Input (Direction)
 #                           Subfolders                      String-Multiple Values (Data Type) > Required (Type) > Input (Direction) 
