@@ -4,7 +4,7 @@
 # Name:             0.21_Sentinel-2_Level-1C_Batch_Download_Unzip_and_Composite_by_Area_of_Interest.py 
 # Author:           Kelly Meehan, USBR
 # Created:          20200406
-# Updated:          20200612 
+# Updated:          20210223 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro license and sentinelsat Python package download
@@ -25,7 +25,7 @@
 #                           Cloud_Range_Begin               String (Data Type) > Required (Type) > Direction (Input)
 #                           Cloud_Range_End                 String (Data Type) > Required (Type) > Direction (Input)
 #                           Composite Bands?                Boolean (Data Type) > Optional (Type) > Direction (Input)                           
-#                           Bands                           String-Multiple Values (Data Type) > Optional (Type) > Direction (Input) > Value List of 01 through 12 (Filter)
+#                           Bands                           String-Multiple Values (Data Type) > Optional (Type) > Direction (Input) > Value List of 01 through 13 (Filter)
 
 ###############################################################################################
 ###############################################################################################
@@ -164,10 +164,12 @@ for p in products_df_unduplicated.index:
     product_info = api.get_product_odata(p)
     arcpy.AddMessage(product_info)
     if product_info['Online']:
+        print('onilne')
         arcpy.AddMessage('Product {} is online. Starting download.'.format(p))
         api.download(p)
     else:
-        arcpy.AddMessage('Product {} is not online.'.format(p))
+        print('off')
+        arcpy.AddWarning('Product {} is not online. Please re-run tool in 24 hours'.format(p))
 
 #----------------------------------------------------------------------------------------------
 
