@@ -5,7 +5,7 @@
 # Name:             7.51_Reclassify_and_Generate_Majority_Frequency_Table.py
 # Author:           Kelly Meehan, USBR
 # Created:          20180618
-# Updated:          20210222 
+# Updated:          20210223 
 # Version:          Created using Python 3.6.8 
 
 # Requires:         ArcGIS Pro 
